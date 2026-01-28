@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>時間課金計算</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 20px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .container {
+            background: white; border-radius: 20px;
+            padding: 30px 20px; max-width: 400px; width: 100%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        h1 { text-align: center; color: #333; font-size: 24px; margin-bottom: 30px; }
+        .start-time {
+            background: #fff9c4; border-radius: 10px;
+            padding: 10px; text-align: center; margin-bottom: 15px;
+            font-size: 14px; color: #f57f17;
+        }
+        .start-time-label { font-weight: bold; margin-bottom: 3px; }
+        .start-time-value { font-size: 16px; font-family: 'Courier New', monospace; }
+        .timer-display {
+            background: #f5f5f5; border-radius: 15px;
+            padding: 20px; text-align: center; margin-bottom: 20px;
+        }
+        .timer-text {
+            font-size: 48px; font-weight: bold; color: #667eea;
+            font-family: 'Courier New', monospace;
+        }
+        .timer-label { font-size: 14px; color: #666; margin-top: 5px; }
+        .button-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        button {
+            flex: 1; padding: 15px; border: none; border-radius: 10px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-start { background: #4CAF50; color: white; }
+        .btn-start:active { background: #45a049; transform: scale(0.95); }
+        .btn-stop { background: #f44336; color: white; }
+        .btn-stop:disabled { background: #ccc; }
+        .charge-section { background: #f9f9f9; border-radius: 15px; padding: 20px; margin-bottom: 20px; }
+        .charge-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; text-align: center; }
+        .charge-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .charge-counter {
+            background: white; border-radius: 8px; padding: 8px 12px;
+            min-width: 60px; text-align: center; font-weight: bold;
+            font-size: 18px; color: #333; border: 2px solid #e0e0e0;
+        }
+        .btn-plus { background: #2196F3; color: white; flex: 1; }
+        .btn-minus { background: #FF9800; color: white; flex: 1; }
+        .auto-charge-info {
+            background: #e3f2fd; border-radius: 10px;
+            padding: 15px; margin-bottom: 20px; text-align: center;
+        }
+        .auto-charge-amount { font-size: 20px; font-weight: bold; color: #0d47a1; }
+        .total-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px; padding: 20px; color: white; margin-bottom: 15px;
+        }
+        .total-amount { font-size: 36px; font-weight: bold; font-family: 'Courier New', monospace; }
+        .prediction-section {
+            background: #fff3cd; border: 2px solid #ffc107;
+            border-radius: 15px; padding: 20px; text-align: center;
+        }
+        .prediction-amount { font-size: 28px; font-weight: bold; color: #856404; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⏱ 時間課金計算</h1>
+        
+        <!-- 開始時間表示 -->
+        <div class="start-time hidden" id="startTimeDisplay">
+            <div class="start-time-label">開始時刻</div>
+            <div class="start-time-value" id="startTimeValue">--:--</div>
+        </div>
+        
+        <div class="timer-display">
+            <div class="timer-text" id="timer">00:00</div>
+            <div class="timer-label">経過時間</div>
+        </div>
+        <div class="button-group">
+            <button class="btn-start" id="start" onclick="start()">開始</button>
+            <button class="btn-stop" id="stop" onclick="stop()" disabled>停止</button>
+        </div>
+        <div class="charge-section">
+            <div class="charge-title">手動追加</div>
+            <div class="charge-row">
+                <button class="btn-plus" onclick="add(800)">800円 +</button>
+                <div class="charge-counter" id="count800">0</div>
+                <button class="btn-minus" onclick="add(-800)">800円 -</button>
+            </div>
+            <div class="charge-row">
+                <button class="btn-plus" onclick="add(600)">600円 +</button>
+                <div class="charge-counter" id="count600">0</div>
+                <button class="btn-minus" onclick="add(-600)">600円 -</button>
+            </div>
+        </div>
+        <div class="auto-charge-info">
+            <div>自動課金額（税抜）</div>
+            <div class="auto-charge-amount" id="auto">¥800</div>
+        </div>
+        <div class="total-section">
+            <div>合計金額（税込）</div>
+            <div class="total-amount" id="total">¥880</div>
+            <div style="font-size:12px;opacity:0.8;margin-top:5px">消費税10%含む</div>
+        </div>
+        <div class="prediction-section">
+            <div style="font-size:14px;color:#856404;margin-bottom:5px">💡 20分後の予測金額</div>
+            <div class="prediction-amount" id="pred">¥1,760</div>
+        </div>
+    </div>
+    <script>
+        let t=null,s=0,i=null,c800=0,c600=0,a=800; // 自動課金初期値800円
+        const AUTO_INITIAL = 800; // 自動課金初期値
+        
+        function start(){
+            if(i)return;
+            // 開始時刻を表示
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2,'0');
+            const minutes = String(now.getMinutes()).padStart(2,'0');
+            document.getElementById('startTimeValue').textContent = hours + ':' + minutes;
+            document.getElementById('startTimeDisplay').classList.remove('hidden');
+            
+            t=Date.now()-s*1000;
+            i=setInterval(u,100);
+            document.getElementById('start').disabled=true;
+            document.getElementById('stop').disabled=false;
+        }
+        
+        function stop(){
+            if(!i)return;
+            clearInterval(i);
+            i=null;
+            
+            // 初期化処理
+            s=0;
+            t=null;
+            a=AUTO_INITIAL; // 自動課金額を初期値に戻す
+            c800=0;
+            c600=0;
+            
+            // 表示を初期化
+            document.getElementById('timer').textContent='00:00';
+            document.getElementById('startTimeDisplay').classList.add('hidden');
+            document.getElementById('count800').textContent='0';
+            document.getElementById('count600').textContent='0';
+            
+            document.getElementById('start').disabled=false;
+            document.getElementById('stop').disabled=true;
+            
+            d(); // 表示更新
+        }
+        
+        function u(){
+            s=Math.floor((Date.now()-t)/1000);
+            let M=Math.floor(s/60),S=s%60;
+            document.getElementById('timer').textContent=String(M).padStart(2,'0')+':'+String(S).padStart(2,'0');
+            // 20分ごとに800円追加（初期値800円を含む）
+            a=AUTO_INITIAL + Math.floor(M/20)*800;
+            d();
+        }
+        
+        function add(v){
+            if(v===800){
+                c800++;
+            }else if(v===-800){
+                if(c800>0)c800--;
+            }else if(v===600){
+                c600++;
+            }else if(v===-600){
+                if(c600>0)c600--;
+            }
+            document.getElementById('count800').textContent=c800;
+            document.getElementById('count600').textContent=c600;
+            d();
+        }
+        
+        function d(){
+            document.getElementById('auto').textContent='¥'+a.toLocaleString();
+            let manual = c800*800 + c600*600;
+            let sub = a + manual; // 自動課金 + 手動追加のみ
+            let tot=Math.floor(sub*1.1);
+            document.getElementById('total').textContent='¥'+tot.toLocaleString();
+            let p=Math.floor((sub+800)*1.1);
+            document.getElementById('pred').textContent='¥'+p.toLocaleString();
+        }
+        
+        // 初期表示
+        d();
+    </script>
+</body>
+</html>
