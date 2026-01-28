@@ -18,26 +18,19 @@
             background: white; border-radius: 15px;
             padding: 15px; max-width: 400px; width: 100%;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            max-height: 100vh; overflow-y: auto;
         }
-        h1 { text-align: center; color: #333; font-size: 20px; margin-bottom: 12px; }
         .start-time {
             background: #fff9c4; border-radius: 8px;
             padding: 8px; text-align: center; margin-bottom: 10px;
-            font-size: 12px; color: #f57f17;
+            font-size: 14px; color: #f57f17; font-weight: bold;
         }
-        .start-time-label { font-weight: bold; margin-bottom: 2px; }
-        .start-time-value { font-size: 14px; font-family: 'Courier New', monospace; }
         .timer-display {
             background: #f5f5f5; border-radius: 12px;
-            padding: 12px; text-align: center; margin-bottom: 12px;
-        }
-        .timer-text {
-            font-size: 36px; font-weight: bold; color: #667eea;
+            padding: 10px; text-align: center; margin-bottom: 10px;
+            font-size: 32px; font-weight: bold; color: #667eea;
             font-family: 'Courier New', monospace;
         }
-        .timer-label { font-size: 11px; color: #666; margin-top: 3px; }
-        .button-group { display: flex; gap: 8px; margin-bottom: 12px; }
+        .button-group { display: flex; gap: 8px; margin-bottom: 10px; }
         button {
             flex: 1; padding: 12px; border: none; border-radius: 8px;
             font-size: 14px; font-weight: bold; cursor: pointer;
@@ -47,9 +40,9 @@
         .btn-start:active { background: #45a049; transform: scale(0.95); }
         .btn-stop { background: #f44336; color: white; }
         .btn-stop:disabled { background: #ccc; }
-        .charge-section { background: #f9f9f9; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
-        .charge-title { font-size: 14px; font-weight: bold; margin-bottom: 10px; text-align: center; }
+        .charge-section { background: #f9f9f9; border-radius: 12px; padding: 10px; margin-bottom: 10px; }
         .charge-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .charge-row:last-child { margin-bottom: 0; }
         .charge-counter {
             background: white; border-radius: 6px; padding: 6px 10px;
             min-width: 50px; text-align: center; font-weight: bold;
@@ -57,49 +50,31 @@
         }
         .btn-plus { background: #2196F3; color: white; flex: 1; }
         .btn-minus { background: #FF9800; color: white; flex: 1; }
-        .auto-charge-info {
-            background: #e3f2fd; border-radius: 8px;
-            padding: 10px; margin-bottom: 10px; text-align: center;
+        .info-row {
+            border-radius: 8px; padding: 10px; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .auto-charge-label { font-size: 11px; color: #1565c0; margin-bottom: 2px; }
-        .auto-charge-amount { font-size: 16px; font-weight: bold; color: #0d47a1; }
-        .total-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px; padding: 12px; color: white; margin-bottom: 10px;
-        }
-        .total-label { font-size: 11px; opacity: 0.9; margin-bottom: 3px; }
-        .total-amount { font-size: 28px; font-weight: bold; font-family: 'Courier New', monospace; }
-        .tax-info { font-size: 10px; opacity: 0.8; margin-top: 3px; }
-        .prediction-section {
-            background: #fff3cd; border: 2px solid #ffc107;
-            border-radius: 12px; padding: 12px; text-align: center;
-        }
-        .prediction-label { font-size: 11px; color: #856404; margin-bottom: 3px; }
-        .prediction-amount { font-size: 22px; font-weight: bold; color: #856404; font-family: 'Courier New', monospace; }
+        .auto-charge-info { background: #e3f2fd; }
+        .total-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .prediction-section { background: #fff3cd; border: 2px solid #ffc107; }
+        .info-label { font-size: 12px; font-weight: bold; }
+        .info-amount { font-size: 22px; font-weight: bold; font-family: 'Courier New', monospace; }
+        .auto-charge-info .info-label { color: #1565c0; }
+        .auto-charge-info .info-amount { color: #0d47a1; }
+        .prediction-section .info-label { color: #856404; }
+        .prediction-section .info-amount { color: #856404; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>⏱ 時間課金計算</h1>
-        
-        <div class="start-time hidden" id="startTimeDisplay">
-            <div class="start-time-label">開始時刻</div>
-            <div class="start-time-value" id="startTimeValue">--:--</div>
-        </div>
-        
-        <div class="timer-display">
-            <div class="timer-text" id="timer">00:00</div>
-            <div class="timer-label">経過時間</div>
-        </div>
-        
+        <div class="start-time hidden" id="startTimeDisplay">開始時刻 <span id="startTimeValue">--:--</span></div>
+        <div class="timer-display" id="timer">00:00</div>
         <div class="button-group">
             <button class="btn-start" id="start" onclick="start()">開始</button>
             <button class="btn-stop" id="stop" onclick="stop()" disabled>停止</button>
         </div>
-        
         <div class="charge-section">
-            <div class="charge-title">手動追加</div>
             <div class="charge-row">
                 <button class="btn-plus" onclick="add(800)">800円 +</button>
                 <div class="charge-counter" id="count800">0</div>
@@ -111,21 +86,17 @@
                 <button class="btn-minus" onclick="add(-600)">600円 -</button>
             </div>
         </div>
-        
-        <div class="auto-charge-info">
-            <div class="auto-charge-label">自動課金額（税抜）</div>
-            <div class="auto-charge-amount" id="auto">¥800</div>
+        <div class="info-row auto-charge-info">
+            <span class="info-label">自動課金額(税抜)</span>
+            <span class="info-amount" id="auto">¥800</span>
         </div>
-        
-        <div class="total-section">
-            <div class="total-label">合計金額（税込）</div>
-            <div class="total-amount" id="total">¥880</div>
-            <div class="tax-info">消費税10%含む</div>
+        <div class="info-row total-section">
+            <span class="info-label">合計金額(税込)</span>
+            <span class="info-amount" id="total">¥880</span>
         </div>
-        
-        <div class="prediction-section">
-            <div class="prediction-label">💡 20分後の予測金額</div>
-            <div class="prediction-amount" id="pred">¥1,760</div>
+        <div class="info-row prediction-section">
+            <span class="info-label">💡 20分後の予測金額</span>
+            <span class="info-amount" id="pred">¥1,760</span>
         </div>
     </div>
     <script>
