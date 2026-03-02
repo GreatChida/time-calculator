@@ -27,16 +27,16 @@
         /* --- 情報表示エリア --- */
         .info-row { border-radius: 8px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
         .info-label { font-size: 12px; font-weight: bold; }
-        .info-amount { font-size: 22px; font-weight: bold; font-family: 'Courier New', monospace; }
+        .info-amount { font-size: 18px; font-weight: bold; font-family: 'Courier New', monospace; }
 
         /* --- 入力・バッジ・カウントダウン --- */
         input[type="time"] { 
             border: 1px solid #ccc; border-radius: 4px; padding: 2px 4px; 
             font-weight: bold; color: #000; background: #fff; 
-            font-size: 18px; /* フォントサイズを大きく */
+            font-size: 18px;
         }
-        .current-time-text { font-size: 18px; font-weight: bold; color: #000; } /* 現在時刻を大きく黒色に */
-        .header-label { font-size: 14px; font-weight: bold; color: #000; } /* ラベルも黒色に */
+        .current-time-text { font-size: 18px; font-weight: bold; color: #000; }
+        .header-label { font-size: 14px; font-weight: bold; color: #000; }
         
         .badge { background: #667eea; color: white; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; white-space: nowrap; }
         .countdown { color: #f44336; font-size: 14px; font-weight: bold; margin-left: 8px; }
@@ -49,9 +49,9 @@
 </head>
 <body style="font-family: -apple-system, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; padding: 10px;">
 
-    <div style="background: white; border-radius: 15px; padding: 15px; max-width: 400px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+    <div style="background: white; border-radius: 15px; padding: 15px; max-width: 400px; width: 100%; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);">
         
-        <!-- [UI] 開始時間 ～ 現在時間 & n回目バッジ -->
+        <!-- [UI] 開始時間 ～ 現在時間 & n回バッジ -->
         <div id="headerArea" class="hidden" style="background: #f0f0f0; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; border: 1px solid #ddd;">
             <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px;">
@@ -60,7 +60,7 @@
                     <span class="header-label">～</span>
                     <span id="currentTimeDisplay" class="current-time-text">00:00:00</span>
                 </div>
-                <span id="cycleBadge" class="badge">1回目</span>
+                <span id="cycleBadge" class="badge">1回</span>
             </div>
         </div>
 
@@ -88,11 +88,11 @@
         <!-- [UI] 金額表示 -->
         <div class="info-row" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
             <span class="info-label">合計金額(税込)</span>
-            <span class="info-amount" id="totalAmount">¥880</span>
+            <span class="info-amount" id="totalAmount">¥0</span>
         </div>
         <div class="info-row" style="background: #fff3cd; border: 2px solid #ffc107;">
             <span class="info-label" style="color: #856404;">💡 次の時間</span>
-            <span class="info-amount" id="predictionAmount" style="color: #856404;">¥1,760</span>
+            <span class="info-amount" id="predictionAmount" style="color: #856404;">¥0</span>
         </div>
     </div>
 
@@ -146,10 +146,10 @@
 
             timerEl.classList.remove('error-text');
             const h = Math.floor(diffSec / 3600), m = Math.floor((diffSec % 3600) / 60), s = diffSec % 60;
-            timerEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            timerEl.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
             
             const cycles = Math.floor(Math.floor(diffSec / 60) / CYCLE_MINS);
-            document.getElementById('cycleBadge').textContent = (cycles + 1) + '回目';
+            document.getElementById('cycleBadge').textContent = (cycles + 1) + '回';
             currentAutoCharge = BASE_CHARGE + (cycles * 800);
             
             const remainSec = (cycles + 1) * CYCLE_MINS * 60 - diffSec;
@@ -167,12 +167,18 @@
             calculateAndDisplay();
         }
 
-        /** 金額計算 */
+        /** 金額計算と深夜料金(10%増)の表示 */
         function calculateAndDisplay() {
             const manualTotal = (counts[600] * 600) + (counts[800] * 800) + (counts[1200] * 1200) + (counts[2000] * 2000);
             const subTotal = currentAutoCharge + manualTotal;
-            document.getElementById('totalAmount').textContent = `¥${Math.floor(subTotal * 1.1).toLocaleString()}`;
-            document.getElementById('predictionAmount').textContent = `¥${Math.floor((subTotal + 800) * 1.1).toLocaleString()}`;
+            
+            const totalNormal = Math.floor(subTotal * 1.1);
+            const totalMidnight = Math.floor(totalNormal * 1.1);
+            const predNormal = Math.floor((subTotal + 800) * 1.1);
+            const predMidnight = Math.floor(predNormal * 1.1);
+
+            document.getElementById('totalAmount').textContent = `¥${totalNormal.toLocaleString()}(深夜:${totalMidnight.toLocaleString()})`;
+            document.getElementById('predictionAmount').textContent = `¥${predNormal.toLocaleString()}(深夜:${predMidnight.toLocaleString()})`;
         }
 
         calculateAndDisplay();
