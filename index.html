@@ -30,10 +30,11 @@
         .info-amount { font-size: 18px; font-weight: bold; font-family: 'Courier New', monospace; }
 
         /* --- 入力・バッジ・カウントダウン --- */
-        input[type="time"] { 
+        /* PCでも確実に入力できるよう、通常のinput[type="time"]として表示 */
+        #startTimeInput { 
             border: 1px solid #ccc; border-radius: 4px; padding: 2px 4px; 
             font-weight: bold; color: #000; background: #fff; 
-            font-size: 18px;
+            font-size: 18px; width: 105px; 
         }
         .current-time-text { font-size: 18px; font-weight: bold; color: #000; }
         .header-label { font-size: 14px; font-weight: bold; color: #000; }
@@ -56,7 +57,8 @@
             <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px;">
                     <span class="header-label">開始</span>
-                    <input type="time" id="startTimeInput" onchange="adjustStartTime()">
+                    <!-- inputを隠さず、そのまま表示して操作可能にしました -->
+                    <input type="time" id="startTimeInput" oninput="adjustStartTime()">
                     <span class="header-label">～</span>
                     <span id="currentTimeDisplay" class="current-time-text">00:00:00</span>
                 </div>
@@ -102,11 +104,24 @@
         let currentAutoCharge = 800;
         const BASE_CHARGE = 800, CYCLE_MINS = 20;
 
+        /** 24時〜33時表記用の文字列生成 */
+        function formatExtendedTime(date) {
+            let h = date.getHours();
+            const m = String(date.getMinutes()).padStart(2, '0');
+            const s = String(date.getSeconds()).padStart(2, '0');
+            if (h < 10) h += 24; // 0-9時を24-33時として扱う
+            return `${h}:${m}:${s}`;
+        }
+
         /** タイマーを開始する */
         function startTimer() {
             if (timerInterval) return;
             const now = new Date();
-            document.getElementById('startTimeInput').value = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            
+            // 入力欄に初期値をセット（標準のHH:MM形式）
+            document.getElementById('startTimeInput').value = 
+                now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            
             document.getElementById('headerArea').classList.remove('hidden');
             baseStartTime = now;
             timerInterval = setInterval(refreshDisplay, 500);
@@ -114,13 +129,20 @@
             refreshDisplay();
         }
 
-        /** 開始時刻を調整 */
+        /** 開始時刻調整（入力された瞬間に即時計算） */
         function adjustStartTime() {
             const timeVal = document.getElementById('startTimeInput').value;
             if (!timeVal) return;
-            const [h, m] = timeVal.split(':');
-            const newStart = new Date();
-            newStart.setHours(parseInt(h), parseInt(m), 0, 0);
+            
+            const [h, m] = timeVal.split(':').map(Number);
+            const now = new Date();
+            let newStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+            
+            // もし未来の時刻なら前日分とみなす（深夜跨ぎ対応）
+            if (newStart > now) {
+                newStart.setDate(newStart.getDate() - 1);
+            }
+
             baseStartTime = newStart;
             refreshDisplay();
         }
@@ -128,18 +150,19 @@
         /** 画面表示の更新 */
         function refreshDisplay() {
             const now = new Date();
-            document.getElementById('currentTimeDisplay').textContent = now.toLocaleTimeString('ja-JP', { hour12: false });
+            // 現在時刻を34時間制で表示
+            document.getElementById('currentTimeDisplay').textContent = formatExtendedTime(now);
 
             if (!baseStartTime) return;
             const diffSec = Math.floor((now.getTime() - baseStartTime.getTime()) / 1000);
             const timerEl = document.getElementById('timer');
 
+            // 未来時刻（エラー）
             if (diffSec < 0) {
                 timerEl.textContent = "エラー";
                 timerEl.classList.add('error-text');
                 document.getElementById('nextLimit').textContent = "---";
                 document.getElementById('cycleBadge').textContent = "待機中";
-                currentAutoCharge = BASE_CHARGE;
                 calculateAndDisplay();
                 return;
             }
@@ -148,7 +171,8 @@
             const h = Math.floor(diffSec / 3600), m = Math.floor((diffSec % 3600) / 60), s = diffSec % 60;
             timerEl.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
             
-            const cycles = Math.floor(Math.floor(diffSec / 60) / CYCLE_MINS);
+            const elapsedMinsTotal = Math.floor(diffSec / 60);
+            const cycles = Math.floor(elapsedMinsTotal / CYCLE_MINS);
             document.getElementById('cycleBadge').textContent = (cycles + 1) + '回';
             currentAutoCharge = BASE_CHARGE + (cycles * 800);
             
@@ -158,7 +182,7 @@
             calculateAndDisplay();
         }
 
-        /** 手動課金の更新 */
+        /** 手動課金額増減 */
         function updateManualCharge(value) {
             const absVal = Math.abs(value);
             if (value > 0) counts[absVal]++;
@@ -167,7 +191,7 @@
             calculateAndDisplay();
         }
 
-        /** 金額計算と深夜料金(10%増)の表示 */
+        /** 合計と予測の計算 */
         function calculateAndDisplay() {
             const manualTotal = (counts[600] * 600) + (counts[800] * 800) + (counts[1200] * 1200) + (counts[2000] * 2000);
             const subTotal = currentAutoCharge + manualTotal;
