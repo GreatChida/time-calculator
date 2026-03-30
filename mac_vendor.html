@@ -2,98 +2,78 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MACアドレス ベンダー検索</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            background: #f5f5f5;
-        }
-        .container {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            max-width: 500px;
-            margin: auto;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        h1 {
-            font-size: 20px;
-            margin-bottom: 20px;
-        }
-        input {
-            width: 90%;
-            padding: 10px;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-        button {
-            padding: 10px 15px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-        .result {
-            margin-top: 20px;
-            padding: 10px;
-            background: #eef;
-            border-radius: 5px;
-        }
-        .note {
-            margin-top: 20px;
-            font-size: 12px;
-            color: #666;
-        }
+        body { font-family: Arial, sans-serif; margin: 40px 15px; background: #f5f5f5; display: flex; justify-content: center; }
+        .container { background: #fff; padding: 20px; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); box-sizing: border-box; }
+        h1 { font-size: 20px; margin-bottom: 15px; }
+        .external-link { display: block; margin-bottom: 25px; color: #007bff; text-decoration: none; }
+        input { width: 100%; padding: 12px; font-size: 16px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; font-size: 16px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 4px; }
+        .result { margin-top: 20px; padding: 15px; background: #eef; border-radius: 5px; min-height: 50px; word-break: break-all; }
+        .note { margin-top: 20px; font-size: 12px; color: #666; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>MACアドレス ベンダー検索</h1>
+    <a href="https://uic.jp/mac/" class="external-link">ネットを利用した詳細検索</a>
 
-    <form>
-        <input type="text" id="ouiInput" placeholder="例:745e1c または 74:5E:1C">
-        <button type="submit" onclick="searchVendor(); return false;">検索</button>
+    <form id="searchForm">
+        <input type="text" id="ouiInput" placeholder="例: CCE7DE0 または 0050C29E0">
+        <button type="submit">検索実行</button>
     </form>
 
-    <div class="result" id="result">結果表示</div>
+    <div class="result" id="result">ここに結果が表示されます</div>
 
     <div class="note">
-        ※最初の3バイト(OUI)のみ入力すること。<br>
+        ※ベンダー識別子（6桁/7桁/9桁）を入力してください。
     </div>
 </div>
 
 <script>
-    // 入力正規化
-    function normalizeInput(input) {
-        return input.replace(/[^a-fA-F0-9]/g, "").toUpperCase().substring(0,6);
-    }
+    // フォームの送信イベントを監視
+    document.getElementById("searchForm").addEventListener("submit", function(event) {
+        // デフォルトの動作（ページリロード）を停止
+        event.preventDefault();
+        searchVendor();
+    });
 
-    // 検索処理
     function searchVendor() {
         const input = document.getElementById("ouiInput").value;
-        const normalized = normalizeInput(input);
+        const cleanInput = input.replace(/[^a-fA-F0-9]/g, "").toUpperCase().substring(0, 9);
 
-        if (normalized.length === 0) {
-            return;
-        }
-        if (normalized.length !== 6) {
-            document.getElementById("result").innerText = "入力形式が正しくない(6桁のHEX)";
+        if (cleanInput.length < 6) {
+            document.getElementById("result").innerText = "エラー: 少なくとも6桁以上の16進数を入力してください";
             return;
         }
 
-        const vendor = ouiDatabase[normalized];
+        // 9桁, 7桁, 6桁の順でチェック
+        const checkLengths = [6]; // [9, 7, 6];
+        let foundVendor = null;
+        let matchedPrefix = "";
 
-        if (vendor) {
-            document.getElementById("result").innerText =
-                "OUI: " + normalized + "\nベンダー: " + vendor;
+        for (let len of checkLengths) {
+            const prefix = cleanInput.substring(0, len);
+            if (ouiDatabase[prefix]) {
+                foundVendor = ouiDatabase[prefix];
+                matchedPrefix = prefix;
+                break;
+            }
+        }
+
+        const resultDiv = document.getElementById("result");
+        if (foundVendor) {
+            resultDiv.innerHTML = "<strong>識別子:</strong> " + matchedPrefix + "<br><strong>ベンダー:</strong> " + foundVendor;
         } else {
-            document.getElementById("result").innerText =
-                "OUI: " + normalized + "\nベンダー情報は未登録";
+            resultDiv.innerText = "識別子: " + cleanInput.substring(0, 6) + "...\nベンダー情報は未登録です";
         }
     }
 </script>
 
 <script>
-    // 簡易OUIデータ
+    //OUIデータ
     const ouiDatabase = {
         "286FB9": "Nokia Shanghai Bell Co., Ltd.",
         "08EA44": "Extreme Networks Headquarters",
