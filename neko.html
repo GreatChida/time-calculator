@@ -170,9 +170,12 @@
 
         <!-- ★追加: ロゴ -->
         <div class="logo-area" style="display:flex; align-items:center; justify-content:center; gap:8px;">
-            <img src="https://bokuneko.jp/assets/images/cats/rui.jpg" alt="るい" style="height:40px; width:auto; border-radius:4px;" onerror="this.style.display='none'">
-            <img src="https://bokuneko.jp/assets/images/pc/common/header/logo.png" alt="ぼくねこ" style="height:40px; width:auto;" onerror="this.style.display='none'">
-            <img src="https://bokuneko.jp/assets/images/cats/kanure.jpg" alt="かぬれ" style="height:40px; width:auto; border-radius:4px;" onerror="this.style.display='none'">
+            <img src="https://bokuneko.jp/assets/images/cats/rui.jpg" alt="るい"
+                style="height:40px; width:auto; border-radius:4px;" onerror="this.style.display='none'">
+            <img src="https://bokuneko.jp/assets/images/pc/common/header/logo.png" alt="ぼくねこ"
+                style="height:40px; width:auto;" onerror="this.style.display='none'">
+            <img src="https://bokuneko.jp/assets/images/cats/kanure.jpg" alt="かぬれ"
+                style="height:40px; width:auto; border-radius:4px;" onerror="this.style.display='none'">
         </div>
 
         <!-- [UI] 開始時間 ～ 現在時間 & n回バッジ (変更なし) -->
@@ -200,9 +203,11 @@
             </div>
         </div>
 
-        <!-- [UI] 操作ボタン (変更なし) -->
+        <!-- [UI] 操作ボタン -->
         <div style="display: flex; gap: 8px; margin-bottom: 10px;">
             <button class="btn-start" id="startBtn" onclick="startTimer()">開始</button>
+            <!-- ★追加: リセットボタン -->
+            <button style="background:#9E6B6B;" onclick="resetAll()">リセット</button>
         </div>
 
         <!-- [UI] 手動課金セクション -->
@@ -220,7 +225,7 @@
                 <button class="btn-minus" onclick="updateCustomCharge(-1)">任意金額 -</button>
             </div>
             <div style="display:flex; align-items:center; gap:6px; margin-top:4px;">
-                <span style="font-size:12px; color:#6B4C2A; font-weight:bold;">金額(税込):</span>
+                <span style="font-size:12px; color:#6B4C2A; font-weight:bold;">&#x1f43e; 任意金額(税込):</span>
                 <input type="number" id="customAmountInput" min="1" value="100"
                     style="border:1px solid #C4A882; border-radius:4px; padding:4px 6px; font-size:14px; font-weight:bold; width:90px; color:#000; background:#fff;">
                 <span style="font-size:12px; color:#6B4C2A;">円</span>
@@ -247,6 +252,69 @@
         let customTotal = 0; // ★追加: 任意金額の累計(税込)
         let currentAutoCharge = 800;
         const BASE_CHARGE = 800, CYCLE_MINS = 20;
+        const LS_KEY = 'chargeCalcState'; // ★追加: localStorageキー
+
+        /** ★追加: 現在の状態をlocalStorageに保存 */
+        function saveState() {
+            const state = {
+                baseStartTime: baseStartTime ? baseStartTime.getTime() : null,
+                counts: counts,
+                customTotal: customTotal,
+            };
+            localStorage.setItem(LS_KEY, JSON.stringify(state));
+        }
+
+        /** ★追加: localStorageから状態を復元し、タイマーを再開 */
+        function restoreState() {
+            const raw = localStorage.getItem(LS_KEY);
+            if (!raw) return;
+            try {
+                const state = JSON.parse(raw);
+                if (state.baseStartTime) {
+                    baseStartTime = new Date(state.baseStartTime);
+                    counts = state.counts || { 550: 0 };
+                    customTotal = state.customTotal || 0;
+
+                    // UI復元
+                    document.getElementById('headerArea').classList.remove('hidden');
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('startTimeInput').value =
+                        String(baseStartTime.getHours()).padStart(2, '0') + ':' +
+                        String(baseStartTime.getMinutes()).padStart(2, '0');
+                    document.getElementById('count550').textContent = counts[550];
+                    document.getElementById('countCustom').textContent = `¥${customTotal.toLocaleString()}`;
+
+                    timerInterval = setInterval(refreshDisplay, 500);
+                    refreshDisplay();
+                }
+            } catch (e) {
+                localStorage.removeItem(LS_KEY);
+            }
+        }
+
+        /** ★追加: 全リセット。localStorage削除・変数初期化・UI初期状態に戻す */
+        function resetAll() {
+            if (!confirm('リセットしますか？計算データはすべて消えます。')) return;
+            clearInterval(timerInterval);
+            timerInterval = null;
+            baseStartTime = null;
+            counts = { 550: 0 };
+            customTotal = 0;
+            currentAutoCharge = BASE_CHARGE;
+            localStorage.removeItem(LS_KEY);
+
+            document.getElementById('headerArea').classList.add('hidden');
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startTimeInput').value = '';
+            document.getElementById('currentTimeDisplay').textContent = '00:00:00';
+            document.getElementById('timer').textContent = '00:00:00';
+            document.getElementById('timer').classList.remove('error-text');
+            document.getElementById('nextLimit').textContent = 'あと 20:00';
+            document.getElementById('cycleBadge').textContent = '1回';
+            document.getElementById('count550').textContent = 0;
+            document.getElementById('countCustom').textContent = '¥0';
+            calculateAndDisplay();
+        }
 
         /** 24時〜33時表記用の文字列生成 */
         function formatExtendedTime(date) {
@@ -270,6 +338,7 @@
             baseStartTime = now;
             timerInterval = setInterval(refreshDisplay, 500);
             document.getElementById('startBtn').disabled = true;
+            saveState(); // ★追加
             refreshDisplay();
         }
 
@@ -288,6 +357,7 @@
             }
 
             baseStartTime = newStart;
+            saveState(); // ★追加
             refreshDisplay();
         }
 
@@ -332,6 +402,7 @@
             if (value > 0) counts[absVal]++;
             else if (counts[absVal] > 0) counts[absVal]--;
             document.getElementById(`count${absVal}`).textContent = counts[absVal];
+            saveState(); // ★追加
             calculateAndDisplay();
         }
 
@@ -345,6 +416,7 @@
                 customTotal = Math.max(0, customTotal - val);
             }
             document.getElementById('countCustom').textContent = `¥${customTotal.toLocaleString()}`;
+            saveState(); // ★追加
             calculateAndDisplay();
         }
 
@@ -362,7 +434,8 @@
             document.getElementById('predictionAmount').textContent = `¥${predNormal.toLocaleString()}`;
         }
 
-        calculateAndDisplay();
+        // ★変更: 起動時にlocalStorageから復元。データがなければ初期表示
+        restoreState() || calculateAndDisplay();
     </script>
 </body>
 
