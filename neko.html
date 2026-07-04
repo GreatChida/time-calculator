@@ -254,29 +254,23 @@
         const BASE_CHARGE = 800, CYCLE_MINS = 20;
         const LS_KEY = 'chargeCalcState'; // ★追加: localStorageキー
 
-        /** ★変更: URLハッシュ+localStorageの両方に保存(iOS Safari対応) */
+        /** ★変更: localStorageのみに保存(GitHub Pages/HTTPS環境向け) */
         function saveState() {
             const state = {
                 baseStartTime: baseStartTime ? baseStartTime.getTime() : null,
                 counts: counts,
                 customTotal: customTotal,
             };
-            const encoded = btoa(JSON.stringify(state));
-            // URLハッシュに保存(履歴を増やさずに更新)
-            history.replaceState(null, '', '#' + encoded);
-            // localStorageにも保存(使えるブラウザではバックアップとして)
-            try { localStorage.setItem(LS_KEY, encoded); } catch (e) { }
+            try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) { }
         }
 
-        /** ★変更: URLハッシュ優先、なければlocalStorageから復元 */
+        /** ★変更: localStorageから復元 */
         function restoreState() {
-            let encoded = location.hash.slice(1);
-            if (!encoded) {
-                try { encoded = localStorage.getItem(LS_KEY) || ''; } catch (e) { }
-            }
-            if (!encoded) return false;
+            let raw = '';
+            try { raw = localStorage.getItem(LS_KEY) || ''; } catch (e) { }
+            if (!raw) return false;
             try {
-                const state = JSON.parse(atob(encoded));
+                const state = JSON.parse(raw);
                 if (!state.baseStartTime) return false;
                 baseStartTime = new Date(state.baseStartTime);
                 counts = state.counts || { 550: 0 };
@@ -295,7 +289,6 @@
                 refreshDisplay();
                 return true;
             } catch (e) {
-                location.hash = '';
                 try { localStorage.removeItem(LS_KEY); } catch (e2) { }
                 return false;
             }
@@ -310,8 +303,7 @@
             counts = { 550: 0 };
             customTotal = 0;
             currentAutoCharge = BASE_CHARGE;
-            localStorage.removeItem(LS_KEY);
-            location.hash = ''; // ★追加: URLハッシュもクリア
+            try { localStorage.removeItem(LS_KEY); } catch (e) { }
 
             document.getElementById('headerArea').classList.add('hidden');
             document.getElementById('startBtn').disabled = false;
