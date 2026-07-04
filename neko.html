@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>時間課金計算</title>
+    <style>
+        /* --- 基本リセット & レイアウト --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .hidden {
+            visibility: hidden;
+        }
+
+        /* --- ボタン共通設定 --- */
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button:active {
+            transform: scale(0.95);
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            background: #ccc !important;
+            cursor: not-allowed;
+        }
+
+        /* ★変更: 色調をぼくねこサイト参考の淡い茶色ベースに */
+        .btn-start {
+            background: #8B6F47;
+        }
+
+        .btn-plus {
+            background: #A0845C;
+        }
+
+        .btn-minus {
+            background: #C4956A;
+        }
+
+        /* --- 情報表示エリア --- */
+        .info-row {
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .info-label {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .info-amount {
+            font-size: 18px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* --- 入力・バッジ・カウントダウン --- */
+        #startTimeInput {
+            border: 1px solid #C4A882;
+            border-radius: 4px;
+            padding: 2px 4px;
+            font-weight: bold;
+            color: #000;
+            background: #fff;
+            font-size: 18px;
+            width: 105px;
+        }
+
+        .current-time-text {
+            font-size: 18px;
+            font-weight: bold;
+            color: #000;
+        }
+
+        .header-label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #000;
+        }
+
+        /* ★変更: バッジ色を淡い茶色ベースに */
+        .badge {
+            background: #8B6F47;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .countdown {
+            color: #c0392b;
+            font-size: 14px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+
+        .error-text {
+            color: #f44336 !important;
+            font-size: 28px !important;
+        }
+
+        .charge-counter {
+            background: white;
+            border-radius: 6px;
+            padding: 6px 10px;
+            min-width: 50px;
+            text-align: center;
+            font-weight: bold;
+            border: 2px solid #D4B896;
+            font-size: 16px;
+            margin: 0 4px;
+        }
+
+        .charge-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        /* ★追加: ロゴエリア */
+        .logo-area {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .logo-area img {
+            height: 40px;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<!-- ★変更: bodyの背景色を淡い茶色グラデーションに -->
+
+<body
+    style="font-family: -apple-system, sans-serif; background: url('https://bokuneko.jp/assets/images/pc/common/under/bg.png') repeat; display: flex; align-items: center; justify-content: center; padding: 10px;">
+
+    <!-- ★変更: カードの背景を淡いクリーム色に -->
+    <div
+        style="background: #FDF6EE; border-radius: 15px; padding: 15px; max-width: 400px; width: 100%; box-shadow: 0 10px 40px rgba(100, 70, 30, 0.2);">
+
+        <!-- ★追加: ロゴ -->
+        <div class="logo-area" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+            <img src="https://bokuneko.jp/assets/images/cats/rui.jpg" alt="るい" style="height:40px; width:auto; border-radius:4px;" onerror="this.style.display='none'">
+            <img src="https://bokuneko.jp/assets/images/pc/common/header/logo.png" alt="ぼくねこ" style="height:40px; width:auto;" onerror="this.style.display='none'">
+            <img src="https://bokuneko.jp/assets/images/cats/kanure.jpg" alt="かぬれ" style="height:40px; width:auto; border-radius:4px;" onerror="this.style.display='none'">
+        </div>
+
+        <!-- [UI] 開始時間 ～ 現在時間 & n回バッジ (変更なし) -->
+        <!-- ★変更: ヘッダーエリアの背景色を淡い茶色に -->
+        <div id="headerArea" class="hidden"
+            style="background: #EDE0D0; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; border: 1px solid #C4A882;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="header-label">開始</span>
+                    <input type="time" id="startTimeInput" oninput="adjustStartTime()">
+                    <span class="header-label">～</span>
+                    <span id="currentTimeDisplay" class="current-time-text">00:00:00</span>
+                </div>
+                <span id="cycleBadge" class="badge">1回</span>
+            </div>
+        </div>
+
+        <!-- [UI] メインタイマー & 残り時間 (変更なし) -->
+        <!-- ★変更: タイマーエリアの背景色とテキスト色を淡い茶色ベースに -->
+        <div style="background: #EDE0D0; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <span id="timer"
+                    style="font-size: 32px; font-weight: bold; color: #6B4C2A; font-family: 'Courier New', monospace;">00:00:00</span>
+                <span id="nextLimit" class="countdown">あと 20:00</span>
+            </div>
+        </div>
+
+        <!-- [UI] 操作ボタン (変更なし) -->
+        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+            <button class="btn-start" id="startBtn" onclick="startTimer()">開始</button>
+        </div>
+
+        <!-- [UI] 手動課金セクション -->
+        <div style="background: #F5EBE0; border-radius: 12px; padding: 10px; margin-bottom: 10px;">
+            <!-- ★変更: 表示ラベルを550円(税込)に。計算も550円で加算・減算 -->
+            <div class="charge-row">
+                <button class="btn-plus" onclick="updateManualCharge(550)">🐈 550円 +</button>
+                <div id="count550" class="charge-counter">0</div>
+                <button class="btn-minus" onclick="updateManualCharge(-550)">550円 -</button>
+            </div>
+            <!-- ★追加: 任意の税込金額を加算・減算できる行 -->
+            <div class="charge-row">
+                <button class="btn-plus" onclick="updateCustomCharge(1)">&#x1f43e; 任意金額 +</button>
+                <div id="countCustom" class="charge-counter" style="min-width:70px;">¥0</div>
+                <button class="btn-minus" onclick="updateCustomCharge(-1)">任意金額 -</button>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+                <span style="font-size:12px; color:#6B4C2A; font-weight:bold;">金額(税込):</span>
+                <input type="number" id="customAmountInput" min="1" value="100"
+                    style="border:1px solid #C4A882; border-radius:4px; padding:4px 6px; font-size:14px; font-weight:bold; width:90px; color:#000; background:#fff;">
+                <span style="font-size:12px; color:#6B4C2A;">円</span>
+            </div>
+        </div>
+
+        <!-- [UI] 金額表示 -->
+        <!-- ★変更: 合計金額の背景色を淡い茶色グラデーションに。深夜料金表示を削除 -->
+        <div class="info-row" style="background: linear-gradient(135deg, #A0845C 0%, #6B4C2A 100%); color: white;">
+            <span class="info-label">合計金額(税込)</span>
+            <span class="info-amount" id="totalAmount">¥0</span>
+        </div>
+        <!-- ★変更: 次の時間の背景色を淡い茶色系に。深夜料金表示を削除 -->
+        <div class="info-row" style="background: #EDE0D0; border: 2px solid #C4A882;">
+            <span class="info-label" style="color: #6B4C2A;">💡 次の時間</span>
+            <span class="info-amount" id="predictionAmount" style="color: #6B4C2A;">¥0</span>
+        </div>
+    </div>
+
+    <script>
+        let timerInterval = null, baseStartTime = null;
+        // ★変更: countsを550円のみに変更。任意金額は別変数で管理
+        let counts = { 550: 0 };
+        let customTotal = 0; // ★追加: 任意金額の累計(税込)
+        let currentAutoCharge = 800;
+        const BASE_CHARGE = 800, CYCLE_MINS = 20;
+
+        /** 24時〜33時表記用の文字列生成 */
+        function formatExtendedTime(date) {
+            let h = date.getHours();
+            const m = String(date.getMinutes()).padStart(2, '0');
+            const s = String(date.getSeconds()).padStart(2, '0');
+            if (h < 10) h += 24; // 0-9時を24-33時として扱う
+            return `${h}:${m}:${s}`;
+        }
+
+        /** タイマーを開始する */
+        function startTimer() {
+            if (timerInterval) return;
+            const now = new Date();
+
+            // 入力欄に初期値をセット（標準のHH:MM形式）
+            document.getElementById('startTimeInput').value =
+                now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+
+            document.getElementById('headerArea').classList.remove('hidden');
+            baseStartTime = now;
+            timerInterval = setInterval(refreshDisplay, 500);
+            document.getElementById('startBtn').disabled = true;
+            refreshDisplay();
+        }
+
+        /** 開始時刻調整（入力された瞬間に即時計算） */
+        function adjustStartTime() {
+            const timeVal = document.getElementById('startTimeInput').value;
+            if (!timeVal) return;
+
+            const [h, m] = timeVal.split(':').map(Number);
+            const now = new Date();
+            let newStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+
+            // もし未来の時刻なら前日分とみなす（深夜跨ぎ対応）
+            if (newStart > now) {
+                newStart.setDate(newStart.getDate() - 1);
+            }
+
+            baseStartTime = newStart;
+            refreshDisplay();
+        }
+
+        /** 画面表示の更新 */
+        function refreshDisplay() {
+            const now = new Date();
+            // 現在時刻を34時間制で表示
+            document.getElementById('currentTimeDisplay').textContent = formatExtendedTime(now);
+
+            if (!baseStartTime) return;
+            const diffSec = Math.floor((now.getTime() - baseStartTime.getTime()) / 1000);
+            const timerEl = document.getElementById('timer');
+
+            // 未来時刻（エラー）
+            if (diffSec < 0) {
+                timerEl.textContent = "エラー";
+                timerEl.classList.add('error-text');
+                document.getElementById('nextLimit').textContent = "---";
+                document.getElementById('cycleBadge').textContent = "待機中";
+                calculateAndDisplay();
+                return;
+            }
+
+            timerEl.classList.remove('error-text');
+            const h = Math.floor(diffSec / 3600), m = Math.floor((diffSec % 3600) / 60), s = diffSec % 60;
+            timerEl.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+            const elapsedMinsTotal = Math.floor(diffSec / 60);
+            const cycles = Math.floor(elapsedMinsTotal / CYCLE_MINS);
+            document.getElementById('cycleBadge').textContent = (cycles + 1) + '回';
+            currentAutoCharge = BASE_CHARGE + (cycles * 800);
+
+            const remainSec = (cycles + 1) * CYCLE_MINS * 60 - diffSec;
+            document.getElementById('nextLimit').textContent = `あと ${String(Math.floor(remainSec / 60)).padStart(2, '0')}:${String(remainSec % 60).padStart(2, '0')}`;
+
+            calculateAndDisplay();
+        }
+
+        /** 手動課金額増減 */
+        function updateManualCharge(value) {
+            const absVal = Math.abs(value);
+            if (value > 0) counts[absVal]++;
+            else if (counts[absVal] > 0) counts[absVal]--;
+            document.getElementById(`count${absVal}`).textContent = counts[absVal];
+            calculateAndDisplay();
+        }
+
+        /** ★追加: 任意金額の加算・減算(税込金額をそのまま加減) */
+        function updateCustomCharge(sign) {
+            const val = parseInt(document.getElementById('customAmountInput').value) || 0;
+            if (val <= 0) return;
+            if (sign > 0) {
+                customTotal += val;
+            } else {
+                customTotal = Math.max(0, customTotal - val);
+            }
+            document.getElementById('countCustom').textContent = `¥${customTotal.toLocaleString()}`;
+            calculateAndDisplay();
+        }
+
+        /** 合計と予測の計算 */
+        // ★変更: 550円のみ集計。任意金額(customTotal)を加算。深夜料金計算と表示を削除
+        function calculateAndDisplay() {
+            const manualTotal = (counts[550] * 550) + customTotal;
+            const subTotal = currentAutoCharge + manualTotal;
+
+            // currentAutoChargeは税抜のため1.1倍。manualTotal(550円・任意金額)はすでに税込
+            const totalNormal = Math.floor(currentAutoCharge * 1.1) + manualTotal;
+            const predNormal = Math.floor((currentAutoCharge + 800) * 1.1) + manualTotal;
+
+            document.getElementById('totalAmount').textContent = `¥${totalNormal.toLocaleString()}`;
+            document.getElementById('predictionAmount').textContent = `¥${predNormal.toLocaleString()}`;
+        }
+
+        calculateAndDisplay();
+    </script>
+</body>
+
+</html>
