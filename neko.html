@@ -254,41 +254,50 @@
         const BASE_CHARGE = 800, CYCLE_MINS = 20;
         const LS_KEY = 'chargeCalcState'; // ★追加: localStorageキー
 
-        /** ★追加: 現在の状態をlocalStorageに保存 */
+        /** ★変更: URLハッシュ+localStorageの両方に保存(iOS Safari対応) */
         function saveState() {
             const state = {
                 baseStartTime: baseStartTime ? baseStartTime.getTime() : null,
                 counts: counts,
                 customTotal: customTotal,
             };
-            localStorage.setItem(LS_KEY, JSON.stringify(state));
+            const encoded = btoa(JSON.stringify(state));
+            // URLハッシュに保存(履歴を増やさずに更新)
+            history.replaceState(null, '', '#' + encoded);
+            // localStorageにも保存(使えるブラウザではバックアップとして)
+            try { localStorage.setItem(LS_KEY, encoded); } catch (e) { }
         }
 
-        /** ★追加: localStorageから状態を復元し、タイマーを再開 */
+        /** ★変更: URLハッシュ優先、なければlocalStorageから復元 */
         function restoreState() {
-            const raw = localStorage.getItem(LS_KEY);
-            if (!raw) return;
+            let encoded = location.hash.slice(1);
+            if (!encoded) {
+                try { encoded = localStorage.getItem(LS_KEY) || ''; } catch (e) { }
+            }
+            if (!encoded) return false;
             try {
-                const state = JSON.parse(raw);
-                if (state.baseStartTime) {
-                    baseStartTime = new Date(state.baseStartTime);
-                    counts = state.counts || { 550: 0 };
-                    customTotal = state.customTotal || 0;
+                const state = JSON.parse(atob(encoded));
+                if (!state.baseStartTime) return false;
+                baseStartTime = new Date(state.baseStartTime);
+                counts = state.counts || { 550: 0 };
+                customTotal = state.customTotal || 0;
 
-                    // UI復元
-                    document.getElementById('headerArea').classList.remove('hidden');
-                    document.getElementById('startBtn').disabled = true;
-                    document.getElementById('startTimeInput').value =
-                        String(baseStartTime.getHours()).padStart(2, '0') + ':' +
-                        String(baseStartTime.getMinutes()).padStart(2, '0');
-                    document.getElementById('count550').textContent = counts[550];
-                    document.getElementById('countCustom').textContent = `¥${customTotal.toLocaleString()}`;
+                // UI復元
+                document.getElementById('headerArea').classList.remove('hidden');
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('startTimeInput').value =
+                    String(baseStartTime.getHours()).padStart(2, '0') + ':' +
+                    String(baseStartTime.getMinutes()).padStart(2, '0');
+                document.getElementById('count550').textContent = counts[550];
+                document.getElementById('countCustom').textContent = `¥${customTotal.toLocaleString()}`;
 
-                    timerInterval = setInterval(refreshDisplay, 500);
-                    refreshDisplay();
-                }
+                timerInterval = setInterval(refreshDisplay, 500);
+                refreshDisplay();
+                return true;
             } catch (e) {
-                localStorage.removeItem(LS_KEY);
+                location.hash = '';
+                try { localStorage.removeItem(LS_KEY); } catch (e2) { }
+                return false;
             }
         }
 
@@ -302,6 +311,7 @@
             customTotal = 0;
             currentAutoCharge = BASE_CHARGE;
             localStorage.removeItem(LS_KEY);
+            location.hash = ''; // ★追加: URLハッシュもクリア
 
             document.getElementById('headerArea').classList.add('hidden');
             document.getElementById('startBtn').disabled = false;
