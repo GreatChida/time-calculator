@@ -46,6 +46,8 @@
         .charge-counter { background: white; border-radius: 6px; padding: 6px 10px; min-width: 50px; text-align: center; font-weight: bold; border: 2px solid #e0e0e0; font-size: 16px; margin: 0 4px; }
         
         .charge-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .free-input { flex: 1; min-width: 0; border: 2px solid #e0e0e0; border-radius: 6px; padding: 7px; font-size: 16px; font-weight: bold; text-align: center; color: #000; background: #fff; }
+        .free-note { font-size: 12px; font-weight: bold; color: #666; white-space: nowrap; }
     </style>
 </head>
 <body style="font-family: -apple-system, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; padding: 10px;">
@@ -81,10 +83,11 @@
 
         <!-- [UI] 手動課金セクション -->
         <div style="background: #f9f9f9; border-radius: 12px; padding: 10px; margin-bottom: 10px;">
-            <div class="charge-row"><button class="btn-plus" onclick="updateManualCharge(600)">🥤 600円 +</button><div id="count600" class="charge-counter">0</div><button class="btn-minus" onclick="updateManualCharge(-600)">600円 -</button></div>
-            <div class="charge-row"><button class="btn-plus" onclick="updateManualCharge(800)">🍚 800円 +</button><div id="count800" class="charge-counter">0</div><button class="btn-minus" onclick="updateManualCharge(-800)">800円 -</button></div>
-            <div class="charge-row"><button class="btn-plus" onclick="updateManualCharge(1200)">1200円 +</button><div id="count1200" class="charge-counter">0</div><button class="btn-minus" onclick="updateManualCharge(-1200)">1200円 -</button></div>
-            <div class="charge-row"><button class="btn-plus" onclick="updateManualCharge(2000)">📷 2000円 +</button><div id="count2000" class="charge-counter">0</div><button class="btn-minus" onclick="updateManualCharge(-2000)">2000円 -</button></div>
+            <div class="charge-row"><button class="btn-plus" onclick="updateManualCharge(660)">🥤 660円 +</button><div id="count660" class="charge-counter">0</div><button class="btn-minus" onclick="updateManualCharge(-660)">660円 -</button></div>
+            <div class="charge-row"><button class="btn-plus" onclick="updateManualCharge(880)">🍚 880円 +</button><div id="count880" class="charge-counter">0</div><button class="btn-minus" onclick="updateManualCharge(-880)">880円 -</button></div>
+            <div class="charge-row"><button class="btn-plus" onclick="updateFreeCharge(1)">🆓 フリー +</button><div id="countFree" class="charge-counter">¥0</div><button class="btn-minus" onclick="updateFreeCharge(-1)">フリー -</button></div>
+            <div class="charge-row"><input type="number" id="freeInput" class="free-input" min="0" step="10" inputmode="numeric" placeholder="任意の金額"><span class="free-note">円（税込）</span></div>
+            <div class="charge-row" style="margin-bottom: 0;"><button class="btn-plus" onclick="updateManualCharge(2000)">📷 2000円 +</button><div id="count2000" class="charge-counter">0</div><button class="btn-minus" onclick="updateManualCharge(-2000)">2000円 -</button></div>
         </div>
 
         <!-- [UI] 金額表示 -->
@@ -100,16 +103,17 @@
 
     <script>
         let timerInterval = null, baseStartTime = null;
-        let counts = { 600: 0, 800: 0, 1200: 0, 2000: 0 };
+        // 手動追加分はすべて「税込金額」として扱う
+        let counts = { 660: 0, 880: 0, 2000: 0 };
+        let freeTotal = 0;
         let currentAutoCharge = 800;
         const BASE_CHARGE = 800, CYCLE_MINS = 20;
 
-        /** 24時〜33時表記用の文字列生成 */
-        function formatExtendedTime(date) {
-            let h = date.getHours();
+        /** HH:MM:SS 形式の文字列生成 */
+        function formatTime(date) {
+            const h = String(date.getHours()).padStart(2, '0');
             const m = String(date.getMinutes()).padStart(2, '0');
             const s = String(date.getSeconds()).padStart(2, '0');
-            if (h < 10) h += 24; // 0-9時を24-33時として扱う
             return `${h}:${m}:${s}`;
         }
 
@@ -150,8 +154,7 @@
         /** 画面表示の更新 */
         function refreshDisplay() {
             const now = new Date();
-            // 現在時刻を34時間制で表示
-            document.getElementById('currentTimeDisplay').textContent = formatExtendedTime(now);
+            document.getElementById('currentTimeDisplay').textContent = formatTime(now);
 
             if (!baseStartTime) return;
             const diffSec = Math.floor((now.getTime() - baseStartTime.getTime()) / 1000);
@@ -191,14 +194,27 @@
             calculateAndDisplay();
         }
 
+        /** フリー（任意金額）の増減：入力欄の税込金額をその都度加減する */
+        function updateFreeCharge(sign) {
+            const input = document.getElementById('freeInput');
+            const value = Math.floor(Number(input.value));
+            if (!Number.isFinite(value) || value <= 0) {
+                input.focus();
+                return;
+            }
+            freeTotal = Math.max(0, freeTotal + (sign * value));
+            document.getElementById('countFree').textContent = `¥${freeTotal.toLocaleString()}`;
+            calculateAndDisplay();
+        }
+
         /** 合計と予測の計算 */
         function calculateAndDisplay() {
-            const manualTotal = (counts[600] * 600) + (counts[800] * 800) + (counts[1200] * 1200) + (counts[2000] * 2000);
-            const subTotal = currentAutoCharge + manualTotal;
+            // ボタンの金額は税込なので、時間課金（税抜）に消費税を掛けてから加算する
+            const manualTotal = (counts[660] * 660) + (counts[880] * 880) + (counts[2000] * 2000) + freeTotal;
             
-            const totalNormal = Math.floor(subTotal * 1.1);
+            const totalNormal = Math.floor(currentAutoCharge * 1.1) + manualTotal;
             const totalMidnight = Math.floor(totalNormal * 1.1);
-            const predNormal = Math.floor((subTotal + 800) * 1.1);
+            const predNormal = Math.floor((currentAutoCharge + 800) * 1.1) + manualTotal;
             const predMidnight = Math.floor(predNormal * 1.1);
 
             document.getElementById('totalAmount').textContent = `¥${totalNormal.toLocaleString()}(深夜:${totalMidnight.toLocaleString()})`;
