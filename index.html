@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- ホーム画面に追加したときの設定（Safari で普通に開く場合は使われない） -->
+    <meta name="apple-mobile-web-app-title" content="おうちアプリ">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon" href="https://baseec-img-mng.akamaized.net/images/user/logo/cd117c13d716cacaef0c58d8117f60a3.png">
     <title>時間課金計算</title>
     <style>
         /* --- 配色（通常） --- */
@@ -280,7 +284,7 @@
             document.getElementById('saverRemain').textContent = `${String(Math.floor(remainSec / 60)).padStart(2, '0')}:${String(remainSec % 60).padStart(2, '0')}`;
             document.getElementById('saverElapsed').textContent = timerEl.textContent;
             if (isAlarmOn() && !alarmInterval && Date.now() - lastActivity >= SAVER_IDLE_MS) {
-                document.getElementById('saver').classList.remove('hidden');
+                showSaver();
             }
 
             // 次の時間の3分前に知らせる（開始時刻の変更で3分以内に飛び込んだ場合は鳴らさない）
@@ -390,10 +394,29 @@
             alarmInterval = setInterval(playAlarm, 1000);
         }
 
+        /** 省電力画面を表示し、Safari の上下のバーも黒くする */
+        function showSaver() {
+            document.getElementById('saver').classList.remove('hidden');
+            setBarColor('#000000');
+        }
+
         /** 省電力画面を閉じて元の画面に戻す */
         function hideSaver() {
             lastActivity = Date.now();
             document.getElementById('saver').classList.add('hidden');
+            setBarColor(null);
+        }
+
+        /** ブラウザのバーの色を指定する（null で指定をやめ、通常時の見た目に戻す） */
+        function setBarColor(color) {
+            let meta = document.querySelector('meta[name="theme-color"]');
+            if (!color) { if (meta) meta.remove(); return; }
+            if (!meta) {
+                meta = document.createElement('meta');
+                meta.name = 'theme-color';
+                document.head.appendChild(meta);
+            }
+            meta.content = color;
         }
 
         /** 計測中は画面が自動で消えないようにする（iOS 16.4 以降の Safari など対応ブラウザのみ） */
