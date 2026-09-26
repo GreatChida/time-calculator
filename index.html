@@ -96,9 +96,19 @@
         /* --- アラーム鳴動中の全画面表示（タップで停止） --- */
         /* --- 省電力画面（30秒操作なしで表示。有機ELでは黒い部分がほぼ電力を使わない） --- */
         /* --- ホーム画面アプリで開いたときだけ：画面を上に寄せ、下に帰宅時間と料金の一覧を出す --- */
-        body.standalone { flex-direction: column; justify-content: flex-start; }
+        body.standalone { flex-direction: column !important; justify-content: flex-start !important; }  /* body の style 属性より優先させる */
         #leaveSchedule { display: none; }
         body.standalone #leaveSchedule { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 400px; margin-top: 8px; padding: 0 10px; }
+        /* 20分の区切りまでの進み具合（1分ごとに更新、残り3分からは赤） */
+        #cycleProgress { display: none; }
+        body.standalone #cycleProgress { display: block; position: relative; width: 100%; max-width: 400px; height: 22px; margin-bottom: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 11px; overflow: hidden; flex-shrink: 0; }
+        #cycleProgressFill { height: 100%; width: 0; background: var(--btn-start); }
+        #cycleProgress.warn #cycleProgressFill { background: var(--countdown); }
+        .progress-text { position: absolute; inset: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; font-size: 12px; font-weight: bold; }
+        /* 経過は塗りに重なったら白、残りは塗りの端にかかっても読めるよう縁取りを付ける */
+        #cycleProgressElapsed { color: var(--text); }
+        #cycleProgressElapsed.on-fill { color: #fff; }
+        #cycleProgressRemain { color: var(--text); text-shadow: 0 0 3px var(--card), 0 0 3px var(--card), 0 0 3px var(--card); }
         .leave-card { background: var(--card); border-radius: 10px; padding: 6px 0; text-align: center; }
         .leave-time { font-size: 12px; font-weight: bold; color: var(--accent); }
         .leave-price { font-size: 17px; font-weight: bold; color: var(--text); font-family: 'Courier New', monospace; }
@@ -114,6 +124,12 @@
     </style>
 </head>
 <body style="font-family: -apple-system, sans-serif; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 6px;">
+
+    <!-- [UI] 20分の区切りまでのプログレスバー（ホーム画面アプリのときだけ表示） -->
+    <div id="cycleProgress">
+        <div id="cycleProgressFill"></div>
+        <div class="progress-text"><span id="cycleProgressElapsed">0分経過</span><span id="cycleProgressRemain">あと20分</span></div>
+    </div>
 
     <div style="background: var(--card); border-radius: 15px; padding: 10px; max-width: 400px; width: 100%; box-shadow: 0 10px 40px var(--shadow);">
         
@@ -158,7 +174,7 @@
                 <button class="btn-plus" disabled style="flex: none; margin-left: auto; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playBeep()">音&nbsp;&nbsp;1</button>
                 <button class="btn-minus" disabled style="flex: none; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playAlarm()">音&nbsp;&nbsp;2</button>
                 <!-- 本番反映の確認用：最後に更新した時刻（HHMM） -->
-                <span id="buildTime" class="free-note" style="font-weight: normal;">1214</span>
+                <span id="buildTime" class="free-note" style="font-weight: normal;">1220</span>
             </div>
         </div>
 
@@ -496,11 +512,26 @@
             document.getElementById('predictionAmount').textContent = `¥${pred.toLocaleString()}`;
             document.getElementById('saverTotal').textContent = `¥${total.toLocaleString()}`;
             updateLeaveSchedule(manualTotal, midnight);
+            updateCycleProgress();
             // 「次の時間」の料金のまま帰れる最後の時刻
             const cycle = currentCycle();
             document.getElementById('nextLeaveTime').textContent = `[〜${cycle < 0 ? '--:--' : leaveByTime(cycle + 1)}]`;
             // 今の合計金額のまま帰れる最後の時刻
             document.getElementById('totalLeaveTime').textContent = `[〜${cycle < 0 ? '--:--' : leaveByTime(cycle)}]`;
+        }
+
+        /** プログレスバー：今の20分のうち何分たったかを1分単位で表示する */
+        function updateCycleProgress() {
+            if (!IS_STANDALONE) return;
+            let mins = 0;
+            if (currentCycle() >= 0) {
+                mins = Math.floor((new Date() - baseStartTime) / 60000) % CYCLE_MINS;
+            }
+            document.getElementById('cycleProgressFill').style.width = `${mins / CYCLE_MINS * 100}%`;
+            document.getElementById('cycleProgressElapsed').textContent = `${mins}分経過`;
+            document.getElementById('cycleProgressRemain').textContent = `あと${CYCLE_MINS - mins}分`;
+            document.getElementById('cycleProgress').classList.toggle('warn', CYCLE_MINS - mins <= WARN_BEFORE_SEC / 60);
+            document.getElementById('cycleProgressElapsed').classList.toggle('on-fill', mins >= 3);
         }
 
         /** 今のサイクル番号（開始からの20分単位、0 始まり。開始前・未来時刻は -1） */
