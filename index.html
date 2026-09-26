@@ -158,17 +158,17 @@
                 <button class="btn-plus" disabled style="flex: none; margin-left: auto; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playBeep()">音&nbsp;&nbsp;1</button>
                 <button class="btn-minus" disabled style="flex: none; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playAlarm()">音&nbsp;&nbsp;2</button>
                 <!-- 本番反映の確認用：最後に更新した時刻（HHMM） -->
-                <span id="buildTime" class="free-note" style="font-weight: normal;">1206</span>
+                <span id="buildTime" class="free-note" style="font-weight: normal;">1214</span>
             </div>
         </div>
 
         <!-- [UI] 金額表示 -->
         <div class="info-row" style="background: var(--total); color: white;">
-            <span class="info-label">合計金額(税込)<span id="midnightMark" class="hidden"> 🌙深夜</span></span>
+            <span class="info-label">合計金額<span id="totalLeaveTime">[〜--:--]</span><span id="midnightMark" class="hidden"> 🌙深夜</span></span>
             <span class="info-amount" id="totalAmount">¥0</span>
         </div>
         <div class="info-row" style="background: var(--panel); border: 2px solid var(--line);">
-            <span class="info-label" style="color: var(--accent);">💡 次の時間<label class="switch"><input type="checkbox" id="alarmToggle" disabled onchange="onAlarmToggle()"><span class="slider"></span></label></span>
+            <span class="info-label" style="color: var(--accent);">次の時間<span id="nextLeaveTime">[〜--:--]</span><label class="switch"><input type="checkbox" id="alarmToggle" disabled onchange="onAlarmToggle()"><span class="slider"></span></label></span>
             <span class="info-amount" id="predictionAmount" style="color: var(--accent);">¥0</span>
         </div>
     </div>
@@ -496,24 +496,39 @@
             document.getElementById('predictionAmount').textContent = `¥${pred.toLocaleString()}`;
             document.getElementById('saverTotal').textContent = `¥${total.toLocaleString()}`;
             updateLeaveSchedule(manualTotal, midnight);
+            // 「次の時間」の料金のまま帰れる最後の時刻
+            const cycle = currentCycle();
+            document.getElementById('nextLeaveTime').textContent = `[〜${cycle < 0 ? '--:--' : leaveByTime(cycle + 1)}]`;
+            // 今の合計金額のまま帰れる最後の時刻
+            document.getElementById('totalLeaveTime').textContent = `[〜${cycle < 0 ? '--:--' : leaveByTime(cycle)}]`;
+        }
+
+        /** 今のサイクル番号（開始からの20分単位、0 始まり。開始前・未来時刻は -1） */
+        function currentCycle() {
+            if (!baseStartTime) return -1;
+            const diffSec = Math.floor((new Date() - baseStartTime) / 1000);
+            return diffSec < 0 ? -1 : Math.floor(diffSec / 60 / CYCLE_MINS);
+        }
+
+        /** 指定サイクルの料金のまま帰れる最後の時刻（料金が上がる瞬間の1分前、HH:MM） */
+        function leaveByTime(cycle) {
+            const end = new Date(baseStartTime.getTime() + ((cycle + 1) * CYCLE_MINS - 1) * 60000);
+            return formatTime(end).slice(0, 5);
         }
 
         /** 帰宅時間の一覧：その料金のまま帰れる最後の時刻と料金を、「次の時間」の次から並べる */
         function updateLeaveSchedule(manualTotal, midnight) {
             if (!IS_STANDALONE) return;
-            const now = new Date();
-            const diffSec = baseStartTime ? Math.floor((now - baseStartTime) / 1000) : -1;
+            const cur = currentCycle();
             let html = '';
             for (let i = 0; i < LEAVE_COUNT; i++) {
                 let time = '--:--', price = '¥-';
-                if (diffSec >= 0) {
+                if (cur >= 0) {
                     // 今のサイクルを 0 とすると、「次の時間」は +1、一覧は +2 から
-                    const cycle = Math.floor(diffSec / 60 / CYCLE_MINS) + 2 + i;
+                    const cycle = cur + 2 + i;
                     const normal = Math.floor((BASE_CHARGE + cycle * 800) * 1.1) + manualTotal;
                     price = `¥${(midnight ? Math.floor(normal * 1.1) : normal).toLocaleString()}`;
-                    // 料金が上がる瞬間の1分前を「この時刻までに帰れば」の時刻とする
-                    const end = new Date(baseStartTime.getTime() + ((cycle + 1) * CYCLE_MINS - 1) * 60000);
-                    time = formatTime(end).slice(0, 5);
+                    time = leaveByTime(cycle);
                 }
                 html += `<div class="leave-card"><div class="leave-time">〜${time}</div><div class="leave-price">${price}</div></div>`;
             }
