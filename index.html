@@ -13,7 +13,7 @@
 
         /* --- ボタン共通設定 --- */
         button {
-            flex: 1; padding: 12px; border: none; border-radius: 8px;
+            flex: 1; padding: 8px; border: none; border-radius: 8px;
             font-size: 14px; font-weight: bold; cursor: pointer;
             color: white; -webkit-tap-highlight-color: transparent;
         }
@@ -25,7 +25,7 @@
         .btn-minus { background: #C4956A; }
 
         /* --- 情報表示エリア --- */
-        .info-row { border-radius: 8px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .info-row { border-radius: 8px; padding: 6px 10px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
         .info-label { font-size: 12px; font-weight: bold; }
         .info-amount { font-size: 18px; font-weight: bold; font-family: 'Courier New', monospace; }
 
@@ -36,6 +36,7 @@
             font-weight: bold; color: #000; background: #fff; 
             font-size: 18px; width: 105px; 
         }
+        #startTimeInput:disabled { background: #eee; color: #999; cursor: not-allowed; }
         .current-time-text { font-size: 18px; font-weight: bold; color: #000; }
         .header-label { font-size: 14px; font-weight: bold; color: #000; }
         
@@ -43,31 +44,31 @@
         .countdown { color: #c0392b; font-size: 14px; font-weight: bold; margin-left: 8px; }
         
         .error-text { color: #f44336 !important; font-size: 28px !important; }
-        .charge-counter { background: white; border-radius: 6px; padding: 6px 10px; min-width: 50px; text-align: center; font-weight: bold; border: 2px solid #D4B896; font-size: 16px; margin: 0 4px; }
+        .charge-counter { background: white; border-radius: 6px; padding: 3px 10px; min-width: 50px; text-align: center; font-weight: bold; border: 2px solid #D4B896; font-size: 16px; margin: 0 4px; }
         
-        .charge-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .charge-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: center; }
         .free-input { border: 1px solid #C4A882; border-radius: 4px; padding: 4px 6px; font-size: 14px; font-weight: bold; width: 90px; color: #000; background: #fff; }
         .free-input:disabled { background: #eee; color: #999; cursor: not-allowed; }
         .free-note { font-size: 12px; font-weight: bold; color: #6B4C2A; white-space: nowrap; }
     </style>
 </head>
-<body style="font-family: -apple-system, sans-serif; background: linear-gradient(135deg, #D4B896 0%, #A0845C 100%); display: flex; align-items: center; justify-content: center; padding: 10px;">
+<body style="font-family: -apple-system, sans-serif; background: linear-gradient(135deg, #D4B896 0%, #A0845C 100%); display: flex; align-items: center; justify-content: center; padding: 6px;">
 
-    <div style="background: #FDF6EE; border-radius: 15px; padding: 15px; max-width: 400px; width: 100%; box-shadow: 0 10px 40px rgba(100, 70, 30, 0.2);">
+    <div style="background: #FDF6EE; border-radius: 15px; padding: 10px; max-width: 400px; width: 100%; box-shadow: 0 10px 40px rgba(100, 70, 30, 0.2);">
         
         <!-- [UI] ロゴ -->
-        <div style="margin-bottom: 10px;">
+        <div style="margin-bottom: 6px;">
             <img src="https://baseec-img-mng.akamaized.net/images/user/logo/cd117c13d716cacaef0c58d8117f60a3.png" alt="ロゴ"
                 style="display: block; margin: 0 auto; height: 80px; width: auto; object-fit: contain;" onerror="this.style.display='none'">
         </div>
 
         <!-- [UI] 開始時間 ～ 現在時間 & n回バッジ -->
-        <div id="headerArea" class="hidden" style="background: #EDE0D0; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; border: 1px solid #C4A882;">
+        <div id="headerArea" style="background: #EDE0D0; border-radius: 8px; padding: 5px 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; border: 1px solid #C4A882;">
             <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px;">
                     <span class="header-label">開始</span>
                     <!-- inputを隠さず、そのまま表示して操作可能にしました -->
-                    <input type="time" id="startTimeInput" oninput="adjustStartTime()">
+                    <input type="time" id="startTimeInput" disabled oninput="adjustStartTime()">
                     <span class="header-label">～</span>
                     <span id="currentTimeDisplay" class="current-time-text">00:00:00</span>
                 </div>
@@ -76,7 +77,7 @@
         </div>
 
         <!-- [UI] メインタイマー & 残り時間 -->
-        <div style="background: #EDE0D0; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 10px;">
+        <div style="background: #EDE0D0; border-radius: 12px; padding: 2px 10px; text-align: center; margin-bottom: 6px;">
             <div style="display: flex; align-items: center; justify-content: center;">
                 <span id="timer" style="font-size: 32px; font-weight: bold; color: #6B4C2A; font-family: 'Courier New', monospace;">00:00:00</span>
                 <span id="nextLimit" class="countdown">あと 20:00</span>
@@ -84,17 +85,17 @@
         </div>
 
         <!-- [UI] 操作ボタン -->
-        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+        <div style="display: flex; gap: 8px; margin-bottom: 6px;">
             <button class="btn-start" id="startBtn" onclick="startTimer()">開始</button>
         </div>
 
         <!-- [UI] 手動課金セクション -->
-        <div id="manualSection" style="background: #F5EBE0; border-radius: 12px; padding: 10px; margin-bottom: 10px;">
+        <div id="manualSection" style="background: #F5EBE0; border-radius: 12px; padding: 6px 10px; margin-bottom: 6px;">
             <div class="charge-row"><button class="btn-plus" disabled onclick="updateManualCharge(660)">🥤 660円 +</button><div id="count660" class="charge-counter">0</div><button class="btn-minus" disabled onclick="updateManualCharge(-660)">660円 -</button></div>
             <div class="charge-row"><button class="btn-plus" disabled onclick="updateManualCharge(880)">🍚 880円 +</button><div id="count880" class="charge-counter">0</div><button class="btn-minus" disabled onclick="updateManualCharge(-880)">880円 -</button></div>
             <div class="charge-row"><button class="btn-plus" disabled onclick="updateManualCharge(2000)">📷 2000円 +</button><div id="count2000" class="charge-counter">0</div><button class="btn-minus" disabled onclick="updateManualCharge(-2000)">2000円 -</button></div>
             <div class="charge-row"><button class="btn-plus" disabled onclick="updateFreeCharge(1)">🆓 金額 +</button><div id="countFree" class="charge-counter" style="min-width: 70px;">¥0</div><button class="btn-minus" disabled onclick="updateFreeCharge(-1)">金額 -</button></div>
-            <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;"><span class="free-note">任意金額(税込):</span><input type="number" id="freeInput" disabled class="free-input" min="0" step="10" inputmode="numeric" autocomplete="off" placeholder="任意の金額"><span class="free-note" style="font-weight: normal;">円</span></div>
+            <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;"><span class="free-note">任意金額(税込):</span><input type="number" id="freeInput" disabled class="free-input" min="0" step="10" inputmode="numeric" autocomplete="off" placeholder="任意の金額"><span class="free-note" style="font-weight: normal;">円</span></div>
         </div>
 
         <!-- [UI] 金額表示 -->
@@ -134,7 +135,7 @@
             document.getElementById('startTimeInput').value = 
                 now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
             
-            document.getElementById('headerArea').classList.remove('hidden');
+            document.getElementById('startTimeInput').disabled = false;
             baseStartTime = now;
             timerInterval = setInterval(refreshDisplay, 500);
             document.getElementById('startBtn').disabled = true;
