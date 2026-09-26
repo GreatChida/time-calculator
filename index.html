@@ -78,6 +78,17 @@
         .free-input { border: 1px solid var(--line); border-radius: 4px; padding: 8px 6px; font-size: 16px; font-weight: bold; width: 90px; color: var(--text); background: var(--field); }
         .free-input:disabled { background: var(--field-disabled); color: var(--field-disabled-text); cursor: not-allowed; }
         .free-note { font-size: 12px; font-weight: bold; color: var(--accent); white-space: nowrap; }
+
+        /* --- アラームのトグルスイッチ --- */
+        .switch { position: relative; display: inline-block; width: 36px; height: 20px; margin-left: 6px; vertical-align: middle; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; inset: 0; background: var(--btn-disabled); border-radius: 20px; transition: 0.2s; cursor: pointer; }
+        .slider::before { content: ""; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px; background: #fff; border-radius: 50%; transition: 0.2s; }
+        .switch input:checked + .slider { background: var(--btn-plus); }
+        .switch input:checked + .slider::before { transform: translateX(16px); }
+
+        /* --- アラーム鳴動中の全画面表示（タップで停止） --- */
+        #alarmOverlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 24px; font-weight: bold; text-align: center; }
     </style>
 </head>
 <body style="font-family: -apple-system, sans-serif; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 6px;">
@@ -133,10 +144,13 @@
             <span class="info-amount" id="totalAmount">¥0</span>
         </div>
         <div class="info-row" style="background: var(--panel); border: 2px solid var(--line);">
-            <span class="info-label" style="color: var(--accent);">💡 次の時間</span>
+            <span class="info-label" style="color: var(--accent);">💡 次の時間<label class="switch"><input type="checkbox" id="alarmToggle"><span class="slider"></span></label></span>
             <span class="info-amount" id="predictionAmount" style="color: var(--accent);">¥0</span>
         </div>
     </div>
+
+    <!-- [UI] アラーム鳴動中の表示（画面のどこをタップしても停止） -->
+    <div id="alarmOverlay" class="hidden" onpointerdown="stopAlarm()">⏰ 次の時間まで3分<br>タップで停止</div>
 
     <script>
         // iPhone のピンチ拡大を無効化（Safari は user-scalable=no を無視するため）
@@ -150,6 +164,10 @@
         const BASE_CHARGE = 800, CYCLE_MINS = 20;
         // 開始時刻がこの時間帯なら終了まで深夜料金（22:00〜翌5:00 開始）
         const MIDNIGHT_FROM_HOUR = 22, MIDNIGHT_TO_HOUR = 5;
+        // 次の時間の何秒前に知らせるか
+        const WARN_BEFORE_SEC = 180;
+        let warnedCycle = -1;      // 知らせ済みのサイクル番号（同じサイクルで二度鳴らさない）
+        let alarmInterval = null;  // アラーム連続鳴動のタイマー
 
         /** HH:MM:SS 形式の文字列生成 */
         function formatTime(date) {
@@ -170,6 +188,8 @@
             
             document.getElementById('startTimeInput').disabled = false;
             baseStartTime = now;
+            // iPhone ではタップ操作の中で音を有効化しておく必要がある
+            getAudioCtx();
             timerInterval = setInterval(refreshDisplay, 500);
             document.getElementById('startBtn').disabled = true;
             // 開始後に手動課金の入力を有効化
@@ -225,6 +245,12 @@
             
             const remainSec = (cycles + 1) * CYCLE_MINS * 60 - diffSec;
             document.getElementById('nextLimit').textContent = `あと ${String(Math.floor(remainSec / 60)).padStart(2, '0')}:${String(remainSec % 60).padStart(2, '0')}`;
+
+            // 次の時間の3分前に知らせる（開始時刻の変更で3分以内に飛び込んだ場合は鳴らさない）
+            if (remainSec <= WARN_BEFORE_SEC && remainSec > WARN_BEFORE_SEC - 10 && warnedCycle !== cycles) {
+                warnedCycle = cycles;
+                notifyBeforeNext();
+            }
             
             calculateAndDisplay();
         }
@@ -308,6 +334,29 @@
                 { freq: 2000, dur: 0.07 }, { freq: 2000, dur: 0.07 },
                 { freq: 2000, dur: 0.07 }, { freq: 2000, dur: 0.15 },
             ], 'square', 0.2, 0.05);
+        }
+
+        /** 3分前の通知：常に「ピッピ」、トグルが有効ならその後アラームを鳴らし続ける */
+        function notifyBeforeNext() {
+            playBeep();
+            if (document.getElementById('alarmToggle').checked) {
+                setTimeout(startAlarm, 500);
+            }
+        }
+
+        /** アラームを画面タップまで繰り返し鳴らす */
+        function startAlarm() {
+            if (alarmInterval) return;
+            document.getElementById('alarmOverlay').classList.remove('hidden');
+            playAlarm();
+            alarmInterval = setInterval(playAlarm, 1000);
+        }
+
+        /** アラームを止める */
+        function stopAlarm() {
+            clearInterval(alarmInterval);
+            alarmInterval = null;
+            document.getElementById('alarmOverlay').classList.add('hidden');
         }
 
         /** 開始時刻が深夜帯かどうか（開始前は通常扱い） */
