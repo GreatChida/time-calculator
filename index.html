@@ -64,21 +64,21 @@
 
         /* --- 入力・バッジ・カウントダウン --- */
         /* PCでも確実に入力できるよう、通常のinput[type="time"]として表示 */
-        #startTimeInput { 
-            border: 1px solid var(--line); border-radius: 4px; padding: 2px 4px; 
-            font-weight: bold; color: var(--text); background: var(--field); 
-            font-size: 16px; width: 88px; 
+        #startTimeInput {
+            border: 1px solid var(--line); border-radius: 4px; padding: 2px 4px;
+            font-weight: bold; color: var(--text); background: var(--field);
+            font-size: 16px; width: 88px;
         }
         #startTimeInput:disabled { background: var(--field-disabled); color: var(--field-disabled-text); cursor: not-allowed; }
         .current-time-text { font-size: 16px; font-weight: bold; color: var(--text); }
         .header-label { font-size: 13px; font-weight: bold; color: var(--text); white-space: nowrap; }
-        
+
         .badge { background: var(--badge); color: white; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; white-space: nowrap; }
         .countdown { color: var(--countdown); font-size: 13px; font-weight: bold; margin-left: 6px; white-space: nowrap; }
-        
+
         .error-text { color: #f44336 !important; font-size: 28px !important; }
         .charge-counter { background: var(--field); color: var(--text); border-radius: 6px; padding: 3px 10px; min-width: 50px; text-align: center; font-weight: bold; border: 2px solid var(--line-soft); font-size: 16px; margin: 0 4px; }
-        
+
         .charge-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: center; }
         .free-input { border: 1px solid var(--line); border-radius: 4px; padding: 8px 6px; font-size: 16px; font-weight: bold; width: 90px; color: var(--text); background: var(--field); }
         .free-input:disabled { background: var(--field-disabled); color: var(--field-disabled-text); cursor: not-allowed; }
@@ -109,6 +109,11 @@
         #cycleProgressElapsed { color: var(--text); }
         #cycleProgressElapsed.on-fill { color: #fff; }
         #cycleProgressRemain { color: var(--text); text-shadow: 0 0 3px var(--card), 0 0 3px var(--card), 0 0 3px var(--card); }
+        /* ひとことコメント（吹き出し風） */
+        #dailyComment { display: none; }
+        body.standalone #dailyComment { display: block; width: 100%; max-width: 400px; margin-top: 12px; padding: 0 10px; }
+        .comment-bubble { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; text-align: center; font-size: 14px; font-weight: bold; color: var(--accent); }
+        .comment-bubble::before { content: ""; position: absolute; top: -7px; left: 50%; margin-left: -7px; width: 12px; height: 12px; background: var(--card); border-left: 1px solid var(--line); border-top: 1px solid var(--line); transform: rotate(45deg); }
         .leave-card { background: var(--card); border-radius: 10px; padding: 6px 0; text-align: center; }
         .leave-time { font-size: 12px; font-weight: bold; color: var(--accent); }
         .leave-price { font-size: 17px; font-weight: bold; color: var(--text); font-family: 'Courier New', monospace; }
@@ -119,6 +124,18 @@
         .saver-label { font-size: 14px; font-weight: bold; letter-spacing: 2px; color: #4a4a4a; }
         .saver-value { font-size: 40px; line-height: 1.1; color: #4a4a4a; }
         .saver-hint { position: absolute; bottom: 20px; left: 0; right: 0; font-size: 12px; color: #333; }
+
+        /* --- 明細・復元確認のポップアップ --- */
+        .modal { position: fixed; inset: 0; z-index: 95; background: rgba(0, 0, 0, 0.55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .modal-box { background: var(--card); color: var(--text); border-radius: 14px; width: 100%; max-width: 360px; padding: 16px; }
+        .modal-title { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 10px; color: var(--accent); }
+        .modal-grid { display: grid; grid-template-columns: 1fr auto; row-gap: 5px; column-gap: 8px; font-size: 13px; }
+        .modal-grid .amount { font-family: 'Courier New', monospace; font-weight: bold; text-align: right; }
+        .modal-grid .sep { border-top: 1px solid var(--line-soft); padding-top: 5px; }
+        .modal-grid .total { border-top: 2px solid var(--accent); padding-top: 6px; font-size: 16px; font-weight: bold; }
+        .modal-grid .total.amount { font-size: 20px; }
+        .modal-text { font-size: 13px; line-height: 1.7; text-align: center; }
+        .modal-buttons { display: flex; gap: 8px; margin-top: 14px; }
 
         #alarmOverlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 24px; font-weight: bold; text-align: center; }
     </style>
@@ -132,10 +149,10 @@
     </div>
 
     <div style="background: var(--card); border-radius: 15px; padding: 10px; max-width: 400px; width: 100%; box-shadow: 0 10px 40px var(--shadow);">
-        
+
         <!-- [UI] ロゴ（左） & 開始行・経過時間（右） -->
         <div style="display: flex; gap: 6px; align-items: stretch; margin-bottom: 6px;">
-            <img id="logo" src="https://baseec-img-mng.akamaized.net/images/user/logo/cd117c13d716cacaef0c58d8117f60a3.png" alt="ロゴ"
+            <img id="logo" src="logo.png" alt="ロゴ"
                 style="display: block; height: 90px; width: auto; object-fit: contain; align-self: center;" onerror="this.style.display='none'">
 
             <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
@@ -160,7 +177,7 @@
 
         <!-- [UI] 操作ボタン -->
         <div style="display: flex; gap: 8px; margin-bottom: 6px;">
-            <button class="btn-start" id="startBtn" onclick="startTimer()">開始</button>
+            <button class="btn-start" id="startBtn" onclick="onStartButton()">開始</button>
         </div>
 
         <!-- [UI] 手動課金セクション -->
@@ -174,7 +191,7 @@
                 <button class="btn-plus" disabled style="flex: none; margin-left: auto; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playBeep()">音&nbsp;&nbsp;1</button>
                 <button class="btn-minus" disabled style="flex: none; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playAlarm()">音&nbsp;&nbsp;2</button>
                 <!-- 本番反映の確認用：最後に更新した時刻（HHMM） -->
-                <span id="buildTime" class="free-note" style="font-weight: normal;">1220</span>
+                <span id="buildTime" class="free-note" style="font-weight: normal;">1240</span>
             </div>
         </div>
 
@@ -191,6 +208,33 @@
 
     <!-- [UI] 帰宅時間と料金の一覧（ホーム画面アプリのときだけ表示。「次の時間」の次から6つ） -->
     <div id="leaveSchedule"></div>
+
+    <!-- [UI] ひとことコメント（ホーム画面アプリのときだけ表示。日付で切り替え） -->
+    <div id="dailyComment"><div id="dailyCommentText" class="comment-bubble"></div></div>
+
+    <!-- [UI] 精算明細（開いた時点の内容で固定。裏の計測は進み続ける） -->
+    <div id="receipt" class="modal hidden">
+        <div class="modal-box">
+            <div class="modal-title">ご利用明細</div>
+            <div id="receiptBody" class="modal-grid"></div>
+            <div class="modal-buttons">
+                <button class="btn-minus" onclick="closeReceipt()">戻る（計測を続ける）</button>
+                <button class="btn-start" onclick="endSession()">終了して新規</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- [UI] 開き直したときの復元確認 -->
+    <div id="restoreDialog" class="modal hidden">
+        <div class="modal-box">
+            <div class="modal-title">前回の計測が残っています</div>
+            <div id="restoreBody" class="modal-text"></div>
+            <div class="modal-buttons">
+                <button class="btn-start" onclick="resumeSession()">続きから再開</button>
+                <button class="btn-minus" onclick="endSession()">破棄して新規</button>
+            </div>
+        </div>
+    </div>
 
     <!-- [UI] アラーム鳴動中の表示（画面のどこをタップしても停止） -->
     <div id="alarmOverlay" class="hidden" onclick="stopAlarm()">⏰ 次の時間まで3分<br>タップで停止</div>
@@ -216,7 +260,7 @@
         let timerInterval = null, baseStartTime = null;
         // 手動追加分はすべて「税込金額」として扱う
         let counts = { 660: 0, 880: 0, 2000: 0 };
-        let freeTotal = 0;
+        let freeItems = {};         // 任意金額の内訳 { 金額: 回数 }
         let lastFreeAmount = 0; // 入力欄が空のときに再利用する直前のフリー金額
         let currentAutoCharge = 800;
         const BASE_CHARGE = 800, CYCLE_MINS = 20;
@@ -230,6 +274,10 @@
         const SAVER_IDLE_MS = 30000;
         let lastActivity = Date.now();
         let wakeLock = null;       // 計測中に画面を消さないためのロック
+        const STORAGE_KEY = 'ouchiApp.session'; // 計測内容の自動保存先（端末内）
+
+        // 電波がなくても起動できるよう、アプリのファイルを端末に保存する
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
         // 画面を触ったら操作ありとみなす
         ['pointerdown', 'keydown', 'input'].forEach(ev =>
@@ -243,23 +291,31 @@
             return `${h}:${m}:${s}`;
         }
 
+        /** 「開始」ボタン：開始前は計測開始、開始後は「精算・終了」として明細を開く */
+        function onStartButton() {
+            if (timerInterval) openReceipt();
+            else startTimer();
+        }
+
         /** タイマーを開始する */
         function startTimer() {
             if (timerInterval) return;
-            const now = new Date();
-            
-            // 入力欄に初期値をセット（標準のHH:MM形式）
-            document.getElementById('startTimeInput').value = 
-                now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-            
+            baseStartTime = new Date();
+            enterRunning();
+            saveState();
+        }
+
+        /** 計測中の状態にする（新規開始と、保存内容からの再開で共通） */
+        function enterRunning() {
+            // 入力欄に開始時刻をセット（標準のHH:MM形式）
+            document.getElementById('startTimeInput').value = formatTime(baseStartTime).slice(0, 5);
             document.getElementById('startTimeInput').disabled = false;
-            baseStartTime = now;
             // iPhone ではタップ操作の中で音を有効化しておく必要がある
             getAudioCtx();
             if (isAlarmOn()) requestWakeLock();
             lastActivity = Date.now();
             timerInterval = setInterval(refreshDisplay, 500);
-            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').textContent = '精算・終了';
             // 開始後に手動課金の入力を有効化
             document.querySelectorAll('#manualSection button, #manualSection input, #alarmToggle').forEach(el => el.disabled = false);
             refreshDisplay();
@@ -269,17 +325,18 @@
         function adjustStartTime() {
             const timeVal = document.getElementById('startTimeInput').value;
             if (!timeVal) return;
-            
+
             const [h, m] = timeVal.split(':').map(Number);
             const now = new Date();
             let newStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
-            
+
             // もし未来の時刻なら前日分とみなす（深夜跨ぎ対応）
             if (newStart > now) {
                 newStart.setDate(newStart.getDate() - 1);
             }
 
             baseStartTime = newStart;
+            saveState();
             refreshDisplay();
         }
 
@@ -305,28 +362,29 @@
             timerEl.classList.remove('error-text');
             const h = Math.floor(diffSec / 3600), m = Math.floor((diffSec % 3600) / 60), s = diffSec % 60;
             timerEl.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-            
+
             const elapsedMinsTotal = Math.floor(diffSec / 60);
             const cycles = Math.floor(elapsedMinsTotal / CYCLE_MINS);
             document.getElementById('cycleBadge').textContent = (cycles + 1) + '回';
             currentAutoCharge = BASE_CHARGE + (cycles * 800);
-            
+
             const remainSec = (cycles + 1) * CYCLE_MINS * 60 - diffSec;
             document.getElementById('nextLimit').textContent = `あと ${String(Math.floor(remainSec / 60)).padStart(2, '0')}:${String(remainSec % 60).padStart(2, '0')}`;
 
             // 省電力画面の表示内容を更新し、一定時間操作がなければ表示する
             document.getElementById('saverRemain').textContent = `${String(Math.floor(remainSec / 60)).padStart(2, '0')}:${String(remainSec % 60).padStart(2, '0')}`;
             document.getElementById('saverElapsed').textContent = timerEl.textContent;
-            if (isAlarmOn() && !alarmInterval && Date.now() - lastActivity >= SAVER_IDLE_MS) {
+            if (isAlarmOn() && !alarmInterval && !isModalOpen() && Date.now() - lastActivity >= SAVER_IDLE_MS) {
                 showSaver();
             }
 
             // 次の時間の3分前に知らせる（開始時刻の変更で3分以内に飛び込んだ場合は鳴らさない）
             if (remainSec <= WARN_BEFORE_SEC && remainSec > WARN_BEFORE_SEC - 10 && warnedCycle !== cycles) {
                 warnedCycle = cycles;
+                saveState();
                 notifyBeforeNext();
             }
-            
+
             calculateAndDisplay();
         }
 
@@ -336,6 +394,7 @@
             if (value > 0) counts[absVal]++;
             else if (counts[absVal] > 0) counts[absVal]--;
             document.getElementById(`count${absVal}`).textContent = counts[absVal];
+            saveState();
             calculateAndDisplay();
         }
 
@@ -355,12 +414,26 @@
                 input.focus();
                 return;
             }
+            // 明細に金額別で出すため、金額ごとの回数で持つ（引くのは足した金額だけ）
+            if (sign > 0) {
+                freeItems[value] = (freeItems[value] || 0) + 1;
+            } else if (freeItems[value] > 0) {
+                if (--freeItems[value] === 0) delete freeItems[value];
+            } else {
+                input.focus();
+                return;
+            }
             lastFreeAmount = value;
-            freeTotal = Math.max(0, freeTotal + (sign * value));
             // ボタン間の表示は累計ではなく、入力された金額を表示する
             document.getElementById('countFree').textContent = `¥${lastFreeAmount.toLocaleString()}`;
             input.value = '';
+            saveState();
             calculateAndDisplay();
+        }
+
+        /** 任意金額の合計 */
+        function freeSum() {
+            return Object.entries(freeItems).reduce((sum, [amount, n]) => sum + Number(amount) * n, 0);
         }
 
         /** 合計と予測の計算 */
@@ -477,6 +550,7 @@
                 if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
                 hideSaver();
             }
+            saveState();
         }
 
         /** アラームを止める */
@@ -495,8 +569,8 @@
 
         function calculateAndDisplay() {
             // ボタンの金額は税込なので、時間課金（税抜）に消費税を掛けてから加算する
-            const manualTotal = (counts[660] * 660) + (counts[880] * 880) + (counts[2000] * 2000) + freeTotal;
-            
+            const manualTotal = (counts[660] * 660) + (counts[880] * 880) + (counts[2000] * 2000) + freeSum();
+
             const totalNormal = Math.floor(currentAutoCharge * 1.1) + manualTotal;
             const totalMidnight = Math.floor(totalNormal * 1.1);
             const predNormal = Math.floor((currentAutoCharge + 800) * 1.1) + manualTotal;
@@ -513,11 +587,26 @@
             document.getElementById('saverTotal').textContent = `¥${total.toLocaleString()}`;
             updateLeaveSchedule(manualTotal, midnight);
             updateCycleProgress();
+            updateDailyComment();
             // 「次の時間」の料金のまま帰れる最後の時刻
             const cycle = currentCycle();
             document.getElementById('nextLeaveTime').textContent = `[〜${cycle < 0 ? '--:--' : leaveByTime(cycle + 1)}]`;
             // 今の合計金額のまま帰れる最後の時刻
             document.getElementById('totalLeaveTime').textContent = `[〜${cycle < 0 ? '--:--' : leaveByTime(cycle)}]`;
+        }
+
+        /** ひとことコメント：月末日〜10日／11日〜20日／それ以外 で切り替える */
+        function updateDailyComment() {
+            if (!IS_STANDALONE) return;
+            const now = new Date();
+            const day = now.getDate();
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            let text;
+            if (day === lastDay || day <= 10) text = 'お給料は計画的に使いましょう';
+            else if (day <= 20) text = '使い過ぎに気を付けて下さい';
+            else text = '給料日前なので早めに帰りましょう';
+            const el = document.getElementById('dailyCommentText');
+            if (el.textContent !== text) el.textContent = text;
         }
 
         /** プログレスバー：今の20分のうち何分たったかを1分単位で表示する */
@@ -564,6 +653,107 @@
                 html += `<div class="leave-card"><div class="leave-time">〜${time}</div><div class="leave-price">${price}</div></div>`;
             }
             document.getElementById('leaveSchedule').innerHTML = html;
+        }
+
+        /* --- 計測内容の自動保存・復元 --- */
+        function saveState() {
+            if (!baseStartTime) return;
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    start: baseStartTime.getTime(), counts, freeItems, lastFreeAmount,
+                    alarm: isAlarmOn(), warnedCycle,
+                }));
+            } catch (e) { /* プライベートブラウズなどで保存できない場合は何もしない */ }
+        }
+
+        function loadState() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch (e) { return null; }
+        }
+
+        /** 保存内容を画面と変数に戻す（計測の再開は resumeSession で行う） */
+        function applyState(st) {
+            baseStartTime = new Date(st.start);
+            counts = { 660: 0, 880: 0, 2000: 0, ...st.counts };
+            freeItems = st.freeItems || {};
+            lastFreeAmount = st.lastFreeAmount || 0;
+            warnedCycle = st.warnedCycle ?? -1;
+            document.getElementById('alarmToggle').checked = !!st.alarm;
+            [660, 880, 2000].forEach(v => document.getElementById(`count${v}`).textContent = counts[v]);
+            document.getElementById('countFree').textContent = `¥${lastFreeAmount.toLocaleString()}`;
+        }
+
+        /** 「続きから再開」 */
+        function resumeSession() {
+            document.getElementById('restoreDialog').classList.add('hidden');
+            enterRunning();
+        }
+
+        /** 「終了して新規」「破棄して新規」：保存内容を消して最初の状態に戻す */
+        function endSession() {
+            try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+            location.reload();
+        }
+
+        /** 明細・復元確認が開いているか（開いている間は省電力画面にしない） */
+        function isModalOpen() {
+            return !document.getElementById('receipt').classList.contains('hidden')
+                || !document.getElementById('restoreDialog').classList.contains('hidden');
+        }
+
+        /** 今この時点の料金の内訳 */
+        function computeBill() {
+            const now = new Date();
+            const elapsedMin = Math.max(0, Math.floor((now - baseStartTime) / 60000));
+            const cycles = Math.max(0, currentCycle());
+            const timeCharge = Math.floor((BASE_CHARGE + cycles * 800) * 1.1);
+            const items = [
+                { label: '🥤 660円', unit: 660, n: counts[660] },
+                { label: '🍚 880円', unit: 880, n: counts[880] },
+                { label: '📷 2000円', unit: 2000, n: counts[2000] },
+                ...Object.keys(freeItems).map(Number).sort((a, b) => a - b)
+                    .map(unit => ({ label: `🆓 ${unit.toLocaleString()}円`, unit, n: freeItems[unit] })),
+            ].filter(it => it.n > 0);
+            const normal = timeCharge + items.reduce((sum, it) => sum + it.unit * it.n, 0);
+            const midnight = isMidnightStart();
+            const total = midnight ? Math.floor(normal * 1.1) : normal;
+            return { now, elapsedMin, cycles, timeCharge, items, normal, midnight, total };
+        }
+
+        const yen = n => `¥${n.toLocaleString()}`;
+
+        /** 明細を開く（開いた時点の内容で固定し、時間では更新しない） */
+        function openReceipt() {
+            const b = computeBill();
+            const start = formatTime(baseStartTime).slice(0, 5), end = formatTime(b.now).slice(0, 5);
+            let html = `<span>ご利用時間</span><span class="amount">${start} 〜 ${end}（${b.elapsedMin}分）</span>`;
+            html += `<span class="sep">時間料金（${CYCLE_MINS}分×${b.cycles + 1}）</span><span class="sep amount">${yen(b.timeCharge)}</span>`;
+            b.items.forEach(it => {
+                html += `<span>${it.label} × ${it.n}</span><span class="amount">${yen(it.unit * it.n)}</span>`;
+            });
+            if (b.midnight) {
+                html += `<span class="sep">🌙 深夜割増（×1.1）</span><span class="sep amount">${yen(b.total - b.normal)}</span>`;
+            }
+            html += `<span class="total">合計(税込)</span><span class="total amount">${yen(b.total)}</span>`;
+            document.getElementById('receiptBody').innerHTML = html;
+            hideSaver();
+            document.getElementById('receipt').classList.remove('hidden');
+        }
+
+        function closeReceipt() {
+            document.getElementById('receipt').classList.add('hidden');
+            lastActivity = Date.now();
+        }
+
+        // 開き直したときに保存内容があれば、再開するか確認する
+        const savedState = loadState();
+        if (savedState && savedState.start) {
+            applyState(savedState);
+            const b = computeBill();
+            const itemsText = b.items.map(it => `${it.label.replace(/^\S+ /, '')}×${it.n}`).join('・') || '注文なし';
+            document.getElementById('restoreBody').innerHTML =
+                `開始 ${formatTime(baseStartTime).slice(0, 5)}（${b.elapsedMin}分経過）<br>${itemsText}<br>` +
+                `現在の合計 <b style="font-family: 'Courier New', monospace; font-size: 16px;">${yen(b.total)}</b>`;
+            document.getElementById('restoreDialog').classList.remove('hidden');
         }
 
         calculateAndDisplay();
