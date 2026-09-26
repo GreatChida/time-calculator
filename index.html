@@ -95,6 +95,14 @@
 
         /* --- アラーム鳴動中の全画面表示（タップで停止） --- */
         /* --- 省電力画面（30秒操作なしで表示。有機ELでは黒い部分がほぼ電力を使わない） --- */
+        /* --- ホーム画面アプリで開いたときだけ：画面を上に寄せ、下に帰宅時間と料金の一覧を出す --- */
+        body.standalone { flex-direction: column; justify-content: flex-start; }
+        #leaveSchedule { display: none; }
+        body.standalone #leaveSchedule { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 400px; margin-top: 8px; padding: 0 10px; }
+        .leave-card { background: var(--card); border-radius: 10px; padding: 6px 0; text-align: center; }
+        .leave-time { font-size: 12px; font-weight: bold; color: var(--accent); }
+        .leave-price { font-size: 17px; font-weight: bold; color: var(--text); font-family: 'Courier New', monospace; }
+
         #saver { position: fixed; inset: 0; z-index: 90; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; }
         #saver .mono { font-family: 'Courier New', monospace; font-weight: bold; }
         #saverRemain { font-size: 66px; line-height: 1; color: #6a6a6a; }
@@ -150,7 +158,7 @@
                 <button class="btn-plus" disabled style="flex: none; margin-left: auto; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playBeep()">音&nbsp;&nbsp;1</button>
                 <button class="btn-minus" disabled style="flex: none; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playAlarm()">音&nbsp;&nbsp;2</button>
                 <!-- 本番反映の確認用：最後に更新した時刻（HHMM） -->
-                <span id="buildTime" class="free-note" style="font-weight: normal;">1149</span>
+                <span id="buildTime" class="free-note" style="font-weight: normal;">1206</span>
             </div>
         </div>
 
@@ -164,6 +172,9 @@
             <span class="info-amount" id="predictionAmount" style="color: var(--accent);">¥0</span>
         </div>
     </div>
+
+    <!-- [UI] 帰宅時間と料金の一覧（ホーム画面アプリのときだけ表示。「次の時間」の次から6つ） -->
+    <div id="leaveSchedule"></div>
 
     <!-- [UI] アラーム鳴動中の表示（画面のどこをタップしても停止） -->
     <div id="alarmOverlay" class="hidden" onclick="stopAlarm()">⏰ 次の時間まで3分<br>タップで停止</div>
@@ -182,6 +193,10 @@
     <script>
         // iPhone のピンチ拡大を無効化（Safari は user-scalable=no を無視するため）
         document.addEventListener('gesturestart', e => e.preventDefault());
+        // ホーム画面に追加したアプリとして開いているか（Safari で開いたときは false）
+        const IS_STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+        document.body.classList.toggle('standalone', IS_STANDALONE);
+        const LEAVE_COUNT = 6; // 帰宅時間の一覧に出す数
         let timerInterval = null, baseStartTime = null;
         // 手動追加分はすべて「税込金額」として扱う
         let counts = { 660: 0, 880: 0, 2000: 0 };
@@ -480,6 +495,29 @@
             document.getElementById('totalAmount').textContent = `¥${total.toLocaleString()}`;
             document.getElementById('predictionAmount').textContent = `¥${pred.toLocaleString()}`;
             document.getElementById('saverTotal').textContent = `¥${total.toLocaleString()}`;
+            updateLeaveSchedule(manualTotal, midnight);
+        }
+
+        /** 帰宅時間の一覧：その料金のまま帰れる最後の時刻と料金を、「次の時間」の次から並べる */
+        function updateLeaveSchedule(manualTotal, midnight) {
+            if (!IS_STANDALONE) return;
+            const now = new Date();
+            const diffSec = baseStartTime ? Math.floor((now - baseStartTime) / 1000) : -1;
+            let html = '';
+            for (let i = 0; i < LEAVE_COUNT; i++) {
+                let time = '--:--', price = '¥-';
+                if (diffSec >= 0) {
+                    // 今のサイクルを 0 とすると、「次の時間」は +1、一覧は +2 から
+                    const cycle = Math.floor(diffSec / 60 / CYCLE_MINS) + 2 + i;
+                    const normal = Math.floor((BASE_CHARGE + cycle * 800) * 1.1) + manualTotal;
+                    price = `¥${(midnight ? Math.floor(normal * 1.1) : normal).toLocaleString()}`;
+                    // 料金が上がる瞬間の1分前を「この時刻までに帰れば」の時刻とする
+                    const end = new Date(baseStartTime.getTime() + ((cycle + 1) * CYCLE_MINS - 1) * 60000);
+                    time = formatTime(end).slice(0, 5);
+                }
+                html += `<div class="leave-card"><div class="leave-time">〜${time}</div><div class="leave-price">${price}</div></div>`;
+            }
+            document.getElementById('leaveSchedule').innerHTML = html;
         }
 
         calculateAndDisplay();
