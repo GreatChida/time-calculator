@@ -7,7 +7,8 @@
     <!-- ホーム画面に追加したときの設定（Safari で普通に開く場合は使われない） -->
     <meta name="apple-mobile-web-app-title" content="おうちアプリ">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <link rel="apple-touch-icon" href="https://baseec-img-mng.akamaized.net/images/user/logo/cd117c13d716cacaef0c58d8117f60a3.png">
+    <!-- ロゴを白背景の正方形にしたアイコン（透過のままだと iPhone で黒く塗られるため） -->
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <title>時間課金計算</title>
     <style>
         /* --- 配色（通常） --- */
@@ -149,7 +150,7 @@
                 <button class="btn-plus" disabled style="flex: none; margin-left: auto; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playBeep()">音&nbsp;&nbsp;1</button>
                 <button class="btn-minus" disabled style="flex: none; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playAlarm()">音&nbsp;&nbsp;2</button>
                 <!-- 本番反映の確認用：最後に更新した時刻（HHMM） -->
-                <span id="buildTime" class="free-note" style="font-weight: normal;">1125</span>
+                <span id="buildTime" class="free-note" style="font-weight: normal;">1149</span>
             </div>
         </div>
 
