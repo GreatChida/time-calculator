@@ -153,7 +153,7 @@
             <span class="info-amount" id="totalAmount">¥0</span>
         </div>
         <div class="info-row" style="background: var(--panel); border: 2px solid var(--line);">
-            <span class="info-label" style="color: var(--accent);">💡 次の時間<label class="switch"><input type="checkbox" id="alarmToggle" disabled><span class="slider"></span></label></span>
+            <span class="info-label" style="color: var(--accent);">💡 次の時間<label class="switch"><input type="checkbox" id="alarmToggle" disabled onchange="onAlarmToggle()"><span class="slider"></span></label></span>
             <span class="info-amount" id="predictionAmount" style="color: var(--accent);">¥0</span>
         </div>
     </div>
@@ -218,7 +218,7 @@
             baseStartTime = now;
             // iPhone ではタップ操作の中で音を有効化しておく必要がある
             getAudioCtx();
-            requestWakeLock();
+            if (isAlarmOn()) requestWakeLock();
             lastActivity = Date.now();
             timerInterval = setInterval(refreshDisplay, 500);
             document.getElementById('startBtn').disabled = true;
@@ -279,7 +279,7 @@
             // 省電力画面の表示内容を更新し、一定時間操作がなければ表示する
             document.getElementById('saverRemain').textContent = `${String(Math.floor(remainSec / 60)).padStart(2, '0')}:${String(remainSec % 60).padStart(2, '0')}`;
             document.getElementById('saverElapsed').textContent = timerEl.textContent;
-            if (!alarmInterval && Date.now() - lastActivity >= SAVER_IDLE_MS) {
+            if (isAlarmOn() && !alarmInterval && Date.now() - lastActivity >= SAVER_IDLE_MS) {
                 document.getElementById('saver').classList.remove('hidden');
             }
 
@@ -377,7 +377,7 @@
         function notifyBeforeNext() {
             hideSaver();
             playBeep();
-            if (document.getElementById('alarmToggle').checked) {
+            if (isAlarmOn()) {
                 setTimeout(startAlarm, 500);
             }
         }
@@ -404,8 +404,23 @@
         }
         // 別のアプリから戻ったときはロックが解除されているので取り直す
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && timerInterval) requestWakeLock();
+            if (document.visibilityState === 'visible' && timerInterval && isAlarmOn()) requestWakeLock();
         });
+
+        /** 次の時間のアラーム（トグル）が有効か */
+        function isAlarmOn() {
+            return document.getElementById('alarmToggle').checked;
+        }
+
+        /** トグル切り替え：有効な間だけ画面を消さず、省電力画面を使う */
+        function onAlarmToggle() {
+            if (isAlarmOn()) {
+                requestWakeLock();
+            } else {
+                if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+                hideSaver();
+            }
+        }
 
         /** アラームを止める */
         function stopAlarm() {
