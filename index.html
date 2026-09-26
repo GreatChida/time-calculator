@@ -89,6 +89,14 @@
         .switch input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
 
         /* --- アラーム鳴動中の全画面表示（タップで停止） --- */
+        /* --- 省電力画面（30秒操作なしで表示。有機ELでは黒い部分がほぼ電力を使わない） --- */
+        #saver { position: fixed; inset: 0; z-index: 90; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; }
+        #saver .mono { font-family: 'Courier New', monospace; font-weight: bold; }
+        #saverRemain { font-size: 66px; line-height: 1; color: #6a6a6a; }
+        .saver-label { font-size: 14px; font-weight: bold; letter-spacing: 2px; color: #4a4a4a; }
+        .saver-value { font-size: 40px; line-height: 1.1; color: #4a4a4a; }
+        .saver-hint { position: absolute; bottom: 20px; left: 0; right: 0; font-size: 12px; color: #333; }
+
         #alarmOverlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 24px; font-weight: bold; text-align: center; }
     </style>
 </head>
@@ -151,7 +159,18 @@
     </div>
 
     <!-- [UI] アラーム鳴動中の表示（画面のどこをタップしても停止） -->
-    <div id="alarmOverlay" class="hidden" onpointerdown="stopAlarm()">⏰ 次の時間まで3分<br>タップで停止</div>
+    <div id="alarmOverlay" class="hidden" onclick="stopAlarm()">⏰ 次の時間まで3分<br>タップで停止</div>
+
+    <!-- [UI] 省電力画面（タップで元の画面に戻る） -->
+    <div id="saver" class="hidden" onclick="hideSaver()">
+        <div id="saverRemain" class="mono">00:00</div>
+        <div>
+            <div class="saver-label">経過</div>
+            <div id="saverElapsed" class="mono saver-value">00:00:00</div>
+            <div id="saverTotal" class="mono saver-value">¥0</div>
+        </div>
+        <div class="saver-hint">タップで戻る</div>
+    </div>
 
     <script>
         // iPhone のピンチ拡大を無効化（Safari は user-scalable=no を無視するため）
@@ -169,6 +188,14 @@
         const WARN_BEFORE_SEC = 180;
         let warnedCycle = -1;      // 知らせ済みのサイクル番号（同じサイクルで二度鳴らさない）
         let alarmInterval = null;  // アラーム連続鳴動のタイマー
+        // 何秒操作がなければ省電力画面にするか
+        const SAVER_IDLE_MS = 30000;
+        let lastActivity = Date.now();
+        let wakeLock = null;       // 計測中に画面を消さないためのロック
+
+        // 画面を触ったら操作ありとみなす
+        ['pointerdown', 'keydown', 'input'].forEach(ev =>
+            document.addEventListener(ev, () => { lastActivity = Date.now(); }, true));
 
         /** HH:MM:SS 形式の文字列生成 */
         function formatTime(date) {
@@ -191,6 +218,8 @@
             baseStartTime = now;
             // iPhone ではタップ操作の中で音を有効化しておく必要がある
             getAudioCtx();
+            requestWakeLock();
+            lastActivity = Date.now();
             timerInterval = setInterval(refreshDisplay, 500);
             document.getElementById('startBtn').disabled = true;
             // 開始後に手動課金の入力を有効化
@@ -246,6 +275,13 @@
             
             const remainSec = (cycles + 1) * CYCLE_MINS * 60 - diffSec;
             document.getElementById('nextLimit').textContent = `あと ${String(Math.floor(remainSec / 60)).padStart(2, '0')}:${String(remainSec % 60).padStart(2, '0')}`;
+
+            // 省電力画面の表示内容を更新し、一定時間操作がなければ表示する
+            document.getElementById('saverRemain').textContent = `${String(Math.floor(remainSec / 60)).padStart(2, '0')}:${String(remainSec % 60).padStart(2, '0')}`;
+            document.getElementById('saverElapsed').textContent = timerEl.textContent;
+            if (!alarmInterval && Date.now() - lastActivity >= SAVER_IDLE_MS) {
+                document.getElementById('saver').classList.remove('hidden');
+            }
 
             // 次の時間の3分前に知らせる（開始時刻の変更で3分以内に飛び込んだ場合は鳴らさない）
             if (remainSec <= WARN_BEFORE_SEC && remainSec > WARN_BEFORE_SEC - 10 && warnedCycle !== cycles) {
@@ -339,6 +375,7 @@
 
         /** 3分前の通知：常に「ピッピ」、トグルが有効ならその後アラームを鳴らし続ける */
         function notifyBeforeNext() {
+            hideSaver();
             playBeep();
             if (document.getElementById('alarmToggle').checked) {
                 setTimeout(startAlarm, 500);
@@ -352,6 +389,23 @@
             playAlarm();
             alarmInterval = setInterval(playAlarm, 1000);
         }
+
+        /** 省電力画面を閉じて元の画面に戻す */
+        function hideSaver() {
+            lastActivity = Date.now();
+            document.getElementById('saver').classList.add('hidden');
+        }
+
+        /** 計測中は画面が自動で消えないようにする（iOS 16.4 以降の Safari など対応ブラウザのみ） */
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+            } catch (e) { /* 低電力モードなどで拒否された場合は何もしない */ }
+        }
+        // 別のアプリから戻ったときはロックが解除されているので取り直す
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && timerInterval) requestWakeLock();
+        });
 
         /** アラームを止める */
         function stopAlarm() {
@@ -384,6 +438,7 @@
             const pred = midnight ? predMidnight : predNormal;
             document.getElementById('totalAmount').textContent = `¥${total.toLocaleString()}`;
             document.getElementById('predictionAmount').textContent = `¥${pred.toLocaleString()}`;
+            document.getElementById('saverTotal').textContent = `¥${total.toLocaleString()}`;
         }
 
         calculateAndDisplay();
