@@ -15,7 +15,7 @@
 
         /* --- ボタン共通設定 --- */
         button {
-            flex: 1; padding: 12px; border: none; border-radius: 8px;
+            flex: 1; padding: 17px 12px; border: none; border-radius: 8px;
             font-size: 14px; font-weight: bold; cursor: pointer;
             color: white; -webkit-tap-highlight-color: transparent;
         }
@@ -27,7 +27,7 @@
         .btn-minus { background: #C4956A; }
 
         /* --- 情報表示エリア --- */
-        .info-row { border-radius: 8px; padding: 6px 10px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .info-row { border-radius: 8px; padding: 11px 10px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
         .info-label { font-size: 12px; font-weight: bold; }
         .info-amount { font-size: 18px; font-weight: bold; font-family: 'Courier New', monospace; }
 
@@ -49,19 +49,19 @@
         .charge-counter { background: white; border-radius: 6px; padding: 3px 10px; min-width: 50px; text-align: center; font-weight: bold; border: 2px solid #D4B896; font-size: 16px; margin: 0 4px; }
         
         .charge-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: center; }
-        .free-input { border: 1px solid #C4A882; border-radius: 4px; padding: 4px 6px; font-size: 16px; font-weight: bold; width: 90px; color: #000; background: #fff; }
+        .free-input { border: 1px solid #C4A882; border-radius: 4px; padding: 8px 6px; font-size: 16px; font-weight: bold; width: 90px; color: #000; background: #fff; }
         .free-input:disabled { background: #eee; color: #999; cursor: not-allowed; }
         .free-note { font-size: 12px; font-weight: bold; color: #6B4C2A; white-space: nowrap; }
     </style>
 </head>
 <body style="font-family: -apple-system, sans-serif; background: linear-gradient(135deg, #D4B896 0%, #A0845C 100%); display: flex; align-items: center; justify-content: center; padding: 6px;">
 
-    <div style="background: #FDF6EE; border-radius: 15px; padding: 54px 10px; max-width: 400px; width: 100%; box-shadow: 0 10px 40px rgba(100, 70, 30, 0.2);">
+    <div style="background: #FDF6EE; border-radius: 15px; padding: 10px; max-width: 400px; width: 100%; box-shadow: 0 10px 40px rgba(100, 70, 30, 0.2);">
         
         <!-- [UI] ロゴ（左） & 開始行・経過時間（右） -->
         <div style="display: flex; gap: 6px; align-items: stretch; margin-bottom: 6px;">
             <img src="https://baseec-img-mng.akamaized.net/images/user/logo/cd117c13d716cacaef0c58d8117f60a3.png" alt="ロゴ"
-                style="display: block; height: 80px; width: auto; object-fit: contain; align-self: center;" onerror="this.style.display='none'">
+                style="display: block; height: 90px; width: auto; object-fit: contain; align-self: center;" onerror="this.style.display='none'">
 
             <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
                 <!-- [UI] 開始時間 ～ 現在時間 & n回バッジ -->
