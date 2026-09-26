@@ -146,10 +146,10 @@
             <div class="charge-row"><button class="btn-plus" disabled onclick="updateFreeCharge(1)">🆓 金額 +</button><div id="countFree" class="charge-counter" style="min-width: 70px;">¥0</div><button class="btn-minus" disabled onclick="updateFreeCharge(-1)">金額 -</button></div>
             <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;"><span class="free-note">任意金額(税込):</span><input type="number" id="freeInput" disabled class="free-input" min="0" step="10" inputmode="numeric" autocomplete="off" placeholder="任意の金額"><span class="free-note" style="font-weight: normal;">円</span>
                 <!-- [仮] 効果音テスト用ボタン（確認後に削除予定） -->
-                <button class="btn-plus" disabled style="flex: none; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playBeep()">音1</button>
-                <button class="btn-minus" disabled style="flex: none; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playAlarm()">音2</button>
-                <!-- 本番反映の確認用：プッシュした時刻（HHMM） -->
-                <span id="buildTime" class="free-note" style="font-weight: normal;">1119</span>
+                <button class="btn-plus" disabled style="flex: none; margin-left: auto; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playBeep()">音&nbsp;&nbsp;1</button>
+                <button class="btn-minus" disabled style="flex: none; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playAlarm()">音&nbsp;&nbsp;2</button>
+                <!-- 本番反映の確認用：最後に更新した時刻（HHMM） -->
+                <span id="buildTime" class="free-note" style="font-weight: normal;">1125</span>
             </div>
         </div>
 
