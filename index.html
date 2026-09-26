@@ -9,6 +9,8 @@
         /* --- 基本リセット & レイアウト --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; overflow: hidden; }
+        /* iPhone のダブルタップ拡大を無効化 */
+        html, body, button, input { touch-action: manipulation; }
         .hidden { display: none !important; }
 
         /* --- ボタン共通設定 --- */
@@ -47,7 +49,7 @@
         .charge-counter { background: white; border-radius: 6px; padding: 3px 10px; min-width: 50px; text-align: center; font-weight: bold; border: 2px solid #D4B896; font-size: 16px; margin: 0 4px; }
         
         .charge-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: center; }
-        .free-input { border: 1px solid #C4A882; border-radius: 4px; padding: 4px 6px; font-size: 14px; font-weight: bold; width: 90px; color: #000; background: #fff; }
+        .free-input { border: 1px solid #C4A882; border-radius: 4px; padding: 4px 6px; font-size: 16px; font-weight: bold; width: 90px; color: #000; background: #fff; }
         .free-input:disabled { background: #eee; color: #999; cursor: not-allowed; }
         .free-note { font-size: 12px; font-weight: bold; color: #6B4C2A; white-space: nowrap; }
     </style>
@@ -110,6 +112,8 @@
     </div>
 
     <script>
+        // iPhone のピンチ拡大を無効化（Safari は user-scalable=no を無視するため）
+        document.addEventListener('gesturestart', e => e.preventDefault());
         let timerInterval = null, baseStartTime = null;
         // 手動追加分はすべて「税込金額」として扱う
         let counts = { 660: 0, 880: 0, 2000: 0 };
