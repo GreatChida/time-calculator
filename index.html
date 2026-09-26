@@ -6,6 +6,32 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>時間課金計算</title>
     <style>
+        /* --- 配色（通常） --- */
+        :root {
+            --bg: linear-gradient(135deg, #D4B896 0%, #A0845C 100%);
+            --card: #FDF6EE; --panel: #EDE0D0; --section: #F5EBE0;
+            --line: #C4A882; --line-soft: #D4B896;
+            --text: #000; --accent: #6B4C2A; --countdown: #c0392b;
+            --btn-start: #8B6F47; --btn-plus: #A0845C; --btn-minus: #C4956A; --btn-disabled: #ccc;
+            --badge: #8B6F47; --field: #fff; --field-disabled: #eee; --field-disabled-text: #999;
+            --total: linear-gradient(135deg, #A0845C 0%, #6B4C2A 100%);
+            --shadow: rgba(100, 70, 30, 0.2);
+        }
+        /* --- 配色（深夜：開始時刻が深夜帯のとき body に .midnight を付ける） --- */
+        body.midnight {
+            --bg: linear-gradient(135deg, #1a1f3a 0%, #0b0e1f 100%);
+            --card: #1e2240; --panel: #2a2f55; --section: #252a4d;
+            --line: #4a5190; --line-soft: #4a5190;
+            --text: #e8e8f5; --accent: #f5d76e; --countdown: #ff8a80;
+            --btn-start: #5c5fb0; --btn-plus: #4b5aa8; --btn-minus: #6b5fa8; --btn-disabled: #3d4266;
+            --badge: #7a6fd0; --field: #151936; --field-disabled: #33385e; --field-disabled-text: #8a8fb8;
+            --total: linear-gradient(135deg, #3b3f8f 0%, #1a1d4a 100%);
+            --shadow: rgba(0, 0, 0, 0.5);
+            color-scheme: dark; /* 時刻入力などの標準部品も暗色にする */
+        }
+        /* 深夜はロゴを白黒反転し、黒地を背景になじませる */
+        body.midnight #logo { filter: invert(1) hue-rotate(180deg); mix-blend-mode: screen; }
+
         /* --- 基本リセット & レイアウト --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; overflow: hidden; }
@@ -20,11 +46,11 @@
             color: white; -webkit-tap-highlight-color: transparent;
         }
         button:active { transform: scale(0.95); opacity: 0.9; }
-        button:disabled { background: #ccc !important; cursor: not-allowed; }
+        button:disabled { background: var(--btn-disabled) !important; cursor: not-allowed; }
 
-        .btn-start { background: #8B6F47; }
-        .btn-plus  { background: #A0845C; }
-        .btn-minus { background: #C4956A; }
+        .btn-start { background: var(--btn-start); }
+        .btn-plus  { background: var(--btn-plus); }
+        .btn-minus { background: var(--btn-minus); }
 
         /* --- 情報表示エリア --- */
         .info-row { border-radius: 8px; padding: 11px 10px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
@@ -34,38 +60,38 @@
         /* --- 入力・バッジ・カウントダウン --- */
         /* PCでも確実に入力できるよう、通常のinput[type="time"]として表示 */
         #startTimeInput { 
-            border: 1px solid #C4A882; border-radius: 4px; padding: 2px 4px; 
-            font-weight: bold; color: #000; background: #fff; 
+            border: 1px solid var(--line); border-radius: 4px; padding: 2px 4px; 
+            font-weight: bold; color: var(--text); background: var(--field); 
             font-size: 16px; width: 88px; 
         }
-        #startTimeInput:disabled { background: #eee; color: #999; cursor: not-allowed; }
-        .current-time-text { font-size: 16px; font-weight: bold; color: #000; }
-        .header-label { font-size: 13px; font-weight: bold; color: #000; white-space: nowrap; }
+        #startTimeInput:disabled { background: var(--field-disabled); color: var(--field-disabled-text); cursor: not-allowed; }
+        .current-time-text { font-size: 16px; font-weight: bold; color: var(--text); }
+        .header-label { font-size: 13px; font-weight: bold; color: var(--text); white-space: nowrap; }
         
-        .badge { background: #8B6F47; color: white; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; white-space: nowrap; }
-        .countdown { color: #c0392b; font-size: 13px; font-weight: bold; margin-left: 6px; white-space: nowrap; }
+        .badge { background: var(--badge); color: white; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; white-space: nowrap; }
+        .countdown { color: var(--countdown); font-size: 13px; font-weight: bold; margin-left: 6px; white-space: nowrap; }
         
         .error-text { color: #f44336 !important; font-size: 28px !important; }
-        .charge-counter { background: white; border-radius: 6px; padding: 3px 10px; min-width: 50px; text-align: center; font-weight: bold; border: 2px solid #D4B896; font-size: 16px; margin: 0 4px; }
+        .charge-counter { background: var(--field); color: var(--text); border-radius: 6px; padding: 3px 10px; min-width: 50px; text-align: center; font-weight: bold; border: 2px solid var(--line-soft); font-size: 16px; margin: 0 4px; }
         
         .charge-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: center; }
-        .free-input { border: 1px solid #C4A882; border-radius: 4px; padding: 8px 6px; font-size: 16px; font-weight: bold; width: 90px; color: #000; background: #fff; }
-        .free-input:disabled { background: #eee; color: #999; cursor: not-allowed; }
-        .free-note { font-size: 12px; font-weight: bold; color: #6B4C2A; white-space: nowrap; }
+        .free-input { border: 1px solid var(--line); border-radius: 4px; padding: 8px 6px; font-size: 16px; font-weight: bold; width: 90px; color: var(--text); background: var(--field); }
+        .free-input:disabled { background: var(--field-disabled); color: var(--field-disabled-text); cursor: not-allowed; }
+        .free-note { font-size: 12px; font-weight: bold; color: var(--accent); white-space: nowrap; }
     </style>
 </head>
-<body style="font-family: -apple-system, sans-serif; background: linear-gradient(135deg, #D4B896 0%, #A0845C 100%); display: flex; align-items: center; justify-content: center; padding: 6px;">
+<body style="font-family: -apple-system, sans-serif; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 6px;">
 
-    <div style="background: #FDF6EE; border-radius: 15px; padding: 10px; max-width: 400px; width: 100%; box-shadow: 0 10px 40px rgba(100, 70, 30, 0.2);">
+    <div style="background: var(--card); border-radius: 15px; padding: 10px; max-width: 400px; width: 100%; box-shadow: 0 10px 40px var(--shadow);">
         
         <!-- [UI] ロゴ（左） & 開始行・経過時間（右） -->
         <div style="display: flex; gap: 6px; align-items: stretch; margin-bottom: 6px;">
-            <img src="https://baseec-img-mng.akamaized.net/images/user/logo/cd117c13d716cacaef0c58d8117f60a3.png" alt="ロゴ"
+            <img id="logo" src="https://baseec-img-mng.akamaized.net/images/user/logo/cd117c13d716cacaef0c58d8117f60a3.png" alt="ロゴ"
                 style="display: block; height: 90px; width: auto; object-fit: contain; align-self: center;" onerror="this.style.display='none'">
 
             <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
                 <!-- [UI] 開始時間 ～ 現在時間 & n回バッジ -->
-                <div id="headerArea" style="background: #EDE0D0; border-radius: 8px; padding: 4px 6px; display: flex; align-items: center; justify-content: space-between; gap: 4px; border: 1px solid #C4A882;">
+                <div id="headerArea" style="background: var(--panel); border-radius: 8px; padding: 4px 6px; display: flex; align-items: center; justify-content: space-between; gap: 4px; border: 1px solid var(--line);">
                     <div style="display: flex; align-items: center; gap: 4px; min-width: 0;">
                         <span class="header-label">開始</span>
                         <input type="time" id="startTimeInput" disabled oninput="adjustStartTime()">
@@ -75,8 +101,8 @@
                 </div>
 
                 <!-- [UI] メインタイマー & 残り時間 -->
-                <div style="flex: 1; background: #EDE0D0; border-radius: 12px; padding: 2px 6px; display: flex; align-items: center; justify-content: center;">
-                    <span id="timer" style="font-size: 26px; font-weight: bold; color: #6B4C2A; font-family: 'Courier New', monospace;">00:00:00</span>
+                <div style="flex: 1; background: var(--panel); border-radius: 12px; padding: 2px 6px; display: flex; align-items: center; justify-content: center;">
+                    <span id="timer" style="font-size: 26px; font-weight: bold; color: var(--accent); font-family: 'Courier New', monospace;">00:00:00</span>
                     <span id="nextLimit" class="countdown">あと 20:00</span>
                     <span id="cycleBadge" class="badge" style="margin-left: 6px;">1回</span>
                 </div>
@@ -89,7 +115,7 @@
         </div>
 
         <!-- [UI] 手動課金セクション -->
-        <div id="manualSection" style="background: #F5EBE0; border-radius: 12px; padding: 6px 10px; margin-bottom: 6px;">
+        <div id="manualSection" style="background: var(--section); border-radius: 12px; padding: 6px 10px; margin-bottom: 6px;">
             <div class="charge-row"><button class="btn-plus" disabled onclick="updateManualCharge(660)">🥤 660円 +</button><div id="count660" class="charge-counter">0</div><button class="btn-minus" disabled onclick="updateManualCharge(-660)">660円 -</button></div>
             <div class="charge-row"><button class="btn-plus" disabled onclick="updateManualCharge(880)">🍚 880円 +</button><div id="count880" class="charge-counter">0</div><button class="btn-minus" disabled onclick="updateManualCharge(-880)">880円 -</button></div>
             <div class="charge-row"><button class="btn-plus" disabled onclick="updateManualCharge(2000)">📷 2000円 +</button><div id="count2000" class="charge-counter">0</div><button class="btn-minus" disabled onclick="updateManualCharge(-2000)">2000円 -</button></div>
@@ -98,13 +124,13 @@
         </div>
 
         <!-- [UI] 金額表示 -->
-        <div class="info-row" style="background: linear-gradient(135deg, #A0845C 0%, #6B4C2A 100%); color: white;">
-            <span class="info-label">合計金額(税込)</span>
+        <div class="info-row" style="background: var(--total); color: white;">
+            <span class="info-label">合計金額(税込)<span id="midnightMark" class="hidden"> 🌙深夜</span></span>
             <span class="info-amount" id="totalAmount">¥0</span>
         </div>
-        <div class="info-row" style="background: #EDE0D0; border: 2px solid #C4A882;">
-            <span class="info-label" style="color: #6B4C2A;">💡 次の時間</span>
-            <span class="info-amount" id="predictionAmount" style="color: #6B4C2A;">¥0</span>
+        <div class="info-row" style="background: var(--panel); border: 2px solid var(--line);">
+            <span class="info-label" style="color: var(--accent);">💡 次の時間</span>
+            <span class="info-amount" id="predictionAmount" style="color: var(--accent);">¥0</span>
         </div>
     </div>
 
@@ -118,6 +144,8 @@
         let lastFreeAmount = 0; // 入力欄が空のときに再利用する直前のフリー金額
         let currentAutoCharge = 800;
         const BASE_CHARGE = 800, CYCLE_MINS = 20;
+        // 開始時刻がこの時間帯なら終了まで深夜料金（22:00〜翌5:00 開始）
+        const MIDNIGHT_FROM_HOUR = 22, MIDNIGHT_TO_HOUR = 5;
 
         /** HH:MM:SS 形式の文字列生成 */
         function formatTime(date) {
@@ -231,6 +259,13 @@
         }
 
         /** 合計と予測の計算 */
+        /** 開始時刻が深夜帯かどうか（開始前は通常扱い） */
+        function isMidnightStart() {
+            if (!baseStartTime) return false;
+            const h = baseStartTime.getHours();
+            return h >= MIDNIGHT_FROM_HOUR || h < MIDNIGHT_TO_HOUR;
+        }
+
         function calculateAndDisplay() {
             // ボタンの金額は税込なので、時間課金（税抜）に消費税を掛けてから加算する
             const manualTotal = (counts[660] * 660) + (counts[880] * 880) + (counts[2000] * 2000) + freeTotal;
@@ -240,8 +275,14 @@
             const predNormal = Math.floor((currentAutoCharge + 800) * 1.1) + manualTotal;
             const predMidnight = Math.floor(predNormal * 1.1);
 
-            document.getElementById('totalAmount').textContent = `¥${totalNormal.toLocaleString()}(深夜:${totalMidnight.toLocaleString()})`;
-            document.getElementById('predictionAmount').textContent = `¥${predNormal.toLocaleString()}(深夜:${predMidnight.toLocaleString()})`;
+            // 開始時刻で通常／深夜を自動切り替えし、該当する金額だけを表示する
+            const midnight = isMidnightStart();
+            document.body.classList.toggle('midnight', midnight);
+            document.getElementById('midnightMark').classList.toggle('hidden', !midnight);
+            const total = midnight ? totalMidnight : totalNormal;
+            const pred = midnight ? predMidnight : predNormal;
+            document.getElementById('totalAmount').textContent = `¥${total.toLocaleString()}`;
+            document.getElementById('predictionAmount').textContent = `¥${pred.toLocaleString()}`;
         }
 
         calculateAndDisplay();
