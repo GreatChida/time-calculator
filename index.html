@@ -191,7 +191,7 @@
                 <button class="btn-plus" disabled style="flex: none; margin-left: auto; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playBeep()">音&nbsp;&nbsp;1</button>
                 <button class="btn-minus" disabled style="flex: none; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playAlarm()">音&nbsp;&nbsp;2</button>
                 <!-- 本番反映の確認用：最後に更新した時刻（HHMM） -->
-                <span id="buildTime" class="free-note" style="font-weight: normal;">1240</span>
+                <span id="buildTime" class="free-note" style="font-weight: normal;">1247</span>
             </div>
         </div>
 
@@ -218,8 +218,8 @@
             <div class="modal-title">ご利用明細</div>
             <div id="receiptBody" class="modal-grid"></div>
             <div class="modal-buttons">
-                <button class="btn-minus" onclick="closeReceipt()">戻る（計測を続ける）</button>
-                <button class="btn-start" onclick="endSession()">終了して新規</button>
+                <button class="btn-start" onclick="closeReceipt()">戻る</button>
+                <button class="btn-minus" onclick="endSession()">終了して新規</button>
             </div>
         </div>
     </div>
@@ -733,6 +733,9 @@
             if (b.midnight) {
                 html += `<span class="sep">🌙 深夜割増（×1.1）</span><span class="sep amount">${yen(b.total - b.normal)}</span>`;
             }
+            // レジ打ちの打ち漏らし確認用：時間料金の回数＋注文の品数
+            const count = (b.cycles + 1) + b.items.reduce((sum, it) => sum + it.n, 0);
+            html += `<span class="sep">合計個数</span><span class="sep amount">${count}個</span>`;
             html += `<span class="total">合計(税込)</span><span class="total amount">${yen(b.total)}</span>`;
             document.getElementById('receiptBody').innerHTML = html;
             hideSaver();
