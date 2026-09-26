@@ -191,7 +191,7 @@
                 <button class="btn-plus" disabled style="flex: none; margin-left: auto; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playBeep()">音&nbsp;&nbsp;1</button>
                 <button class="btn-minus" disabled style="flex: none; padding: 6px 4px; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap;" onclick="playAlarm()">音&nbsp;&nbsp;2</button>
                 <!-- 本番反映の確認用：最後に更新した時刻（HHMM） -->
-                <span id="buildTime" class="free-note" style="font-weight: normal;">1247</span>
+                <span id="buildTime" class="free-note" style="font-weight: normal;">1258</span>
             </div>
         </div>
 
@@ -649,6 +649,9 @@
                     const normal = Math.floor((BASE_CHARGE + cycle * 800) * 1.1) + manualTotal;
                     price = `¥${(midnight ? Math.floor(normal * 1.1) : normal).toLocaleString()}`;
                     time = leaveByTime(cycle);
+                    // 開始からちょうど n 時間の区切りには「(nH)」を付ける
+                    const mins = (cycle + 1) * CYCLE_MINS;
+                    if (mins % 60 === 0) time += `(${mins / 60}H)`;
                 }
                 html += `<div class="leave-card"><div class="leave-time">〜${time}</div><div class="leave-price">${price}</div></div>`;
             }
